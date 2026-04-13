@@ -1,17 +1,9 @@
-//
-//  PanelWindowController.swift
-//  Notch
-//
-//  Created by David Ramos on 04/04/2026.
-//
-
 /*
- 
- PanelWindowController.swift. Este archivo actuará como el "conductor" de la ventana física. Él interactúa con AppKit (macOS puro)
- para calcular los píxeles exactos de tu notch y hacer que la ventana se expanda con una animación fluida (NSAnimationContext).
- 
+ EXPLICACIÓN DE LA CLASE:
+ Es el "Conductor" físico. Habla con AppKit para mover y cambiar el tamaño de la ventana.
+ Gestiona el redondeo directamente en el CALayer de la ventana (CoreAnimation)
+ aplicando una curva continua (.continuous) para el efecto squircle orgánico.
  */
-
 
 import AppKit
 import SwiftUI
@@ -20,9 +12,8 @@ import Combine
 class PanelWindowController {
     var panel: NSPanel!
     var viewModel: PanelViewModel
-    private var cancellables = Set<AnyCancellable>() // Para escuchar al Cerebro
+    private var cancellables = Set<AnyCancellable>()
     
-    // El controlador de la ventana recibe el Cerebro (ViewModel) al nacer
     init(viewModel: PanelViewModel) {
         self.viewModel = viewModel
         setupPanel()
@@ -31,11 +22,8 @@ class PanelWindowController {
     
     private func setupPanel() {
         guard let screen = NSScreen.main else { return }
-        
-        // 1. Calculamos el tamaño exacto inicial (colapsado)
         let initialRect = notchFrame(for: screen)
         
-        // 2. Creamos la ventana física invisible
         panel = NSPanel(
             contentRect: initialRect,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
@@ -43,30 +31,37 @@ class PanelWindowController {
             defer: false
         )
         
-        // 3. Propiedades para que flote y sea transparente
         panel.level = .statusBar
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.hasShadow = false
         panel.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
         
-        // 4. Inyectamos la vista visual (NotchPanelView) DENTRO de la ventana física
-        let rootView = NotchPanelView().environmentObject(viewModel)
-        panel.contentView = NSHostingView(rootView: rootView)
+        let rootView = NotchPanelView()
+            .environmentObject(viewModel)
+            .environmentObject(WidgetRegistry.shared)
+        
+        let hostingView = NSHostingView(rootView: rootView)
+        panel.contentView = hostingView
+        
+        // Enmascaramos el panel directamente para que la curva no se corte
+        hostingView.wantsLayer = true
+        hostingView.layer?.masksToBounds = true
+        hostingView.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+        hostingView.layer?.cornerCurve = .continuous
+        hostingView.layer?.cornerRadius = 12
+        
         panel.orderFrontRegardless()
     }
     
-    // Esta función lee el hardware de tu Mac para buscar el Notch
     private func notchFrame(for screen: NSScreen) -> NSRect {
-        // auxiliaryTopLeftArea nos dice dónde acaba el notch por la izquierda
         if let notchArea = screen.auxiliaryTopLeftArea {
             let rightArea = screen.auxiliaryTopRightArea ?? .zero
-            // Calculamos el ancho restando los márgenes laterales al ancho total
             let notchWidth = screen.frame.width - notchArea.width - rightArea.width
             let notchX = notchArea.maxX
             
-            // Guardamos esta altura real en el Cerebro para usarla luego
             viewModel.collapsedHeight = notchArea.height
+            viewModel.collapsedWidth = notchWidth
             
             return NSRect(
                 x: notchX,
@@ -76,9 +71,9 @@ class PanelWindowController {
             )
         }
         
-        // Plan B: Si conectas un monitor externo sin notch, crea una barra virtual de 200px
         let fallbackWidth: CGFloat = 200
         viewModel.collapsedHeight = 32
+        viewModel.collapsedWidth = fallbackWidth
         return NSRect(
             x: screen.frame.midX - fallbackWidth / 2,
             y: screen.frame.maxY - 32,
@@ -87,12 +82,9 @@ class PanelWindowController {
         )
     }
     
-    // Escuchamos los cambios del ViewModel
     private func setupBindings() {
         viewModel.$isExpanded
-            // Ignoramos el primer valor al arrancar
             .dropFirst()
-            // Cuando cambie el estado, ejecutamos la animación en el hilo principal
             .receive(on: DispatchQueue.main)
             .sink { [weak self] expanded in
                 self?.animatePanel(expand: expanded)
@@ -100,31 +92,35 @@ class PanelWindowController {
             .store(in: &cancellables)
     }
     
-    // La animación fluida del sistema
     private func animatePanel(expand: Bool) {
         guard let screen = NSScreen.main else { return }
             
-            let targetFrame = expand ? expandedFrame(for: screen) : notchFrame(for: screen)
+        let targetFrame = expand ? expandedFrame(for: screen) : notchFrame(for: screen)
+        
+        // CURVAS DINÁMICAS: Ahora la ventana física lee el redondeo de los Ajustes
+        let targetRadius: CGFloat = expand ? CGFloat(AppSettings.shared.cornerRadius) : 12
             
-            // 1. Sincronizamos AppKit (El frame de la ventana)
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.3
-                // Estos puntos de control imitan el efecto "bounce" de Apple
-                context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
-                context.allowsImplicitAnimation = true
-                panel.animator().setFrame(targetFrame, display: true)
-            }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
+            context.allowsImplicitAnimation = true // Permite que CALayer se anime solo
             
+            panel.animator().setFrame(targetFrame, display: true)
+            panel.contentView?.layer?.cornerRadius = targetRadius
+        }
     }
     
-    // Calcula hasta dónde tiene que bajar la ventana física al expandirse
     private func expandedFrame(for screen: NSScreen) -> NSRect {
         let collapsed = notchFrame(for: screen)
+        
+        let currentHeight = viewModel.dynamicExpandedHeight
+        let expandedWidth = viewModel.dynamicExpandedWidth
+        
         return NSRect(
-            x: collapsed.minX,
-            y: collapsed.maxY - viewModel.expandedHeight,
-            width: collapsed.width,
-            height: viewModel.expandedHeight
+            x: collapsed.midX - (expandedWidth / 2),
+            y: collapsed.maxY - currentHeight,
+            width: expandedWidth,
+            height: currentHeight
         )
     }
 }

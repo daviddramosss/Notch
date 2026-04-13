@@ -26,42 +26,33 @@ Si dependiéramos únicamente de SwiftUI para gestionar la ventana, sufriríamos
 ```text
 NotchPanel/
 ├── NotchPanelApp.swift          ← Entry point, NSApplicationDelegateAdaptor
+├── NotchPanelView.swift         ← La carcasa visual de SwiftUI (Raíz)
+├── Assets.xcassets              ← Contiene el logo de Spotify y recursos visuales
+├── Info.plist                   ← Declaración de permisos del sistema (AppleEvents)
 │
 ├── Core/
-│   ├── AppDelegate.swift        ← NSPanel lifecycle, primera ventana eliminada aquí
-│   ├── PanelWindowController.swift  ← Controla posición, expansión física y animación
-│   ├── PanelViewModel.swift     ← @Published isExpanded, dimensiones de la ventana
-│   └── HoverDetector.swift      ← NSEvent global/local (mouse tracking e histéresis)
+│   ├── AppDelegate.swift        ← Ciclo de vida, elimina ventana inicial y pide permisos
+│   ├── AutomationPermissionManager.swift ← Fuerza popups nativos de macOS (Carbon API)
+│   ├── PanelWindowController.swift ← Controla posición, física del notch y animación
+│   ├── PanelViewModel.swift     ← Estado (@Published isExpanded) y dimensiones
+│   └── HoverDetector.swift      ← Rastreo de puntero (NSEvent) e histéresis
 │
-├── Views/
-│   └── NotchPanelView.swift     ← La carcasa visual de SwiftUI
-│
-├── Modules/                     ← Cada widget es un módulo autocontenido
-│   ├── WidgetProtocol.swift     ← protocol Widget: View { var id, isEnabled }
-│   ├── NowPlaying/
-│   │   ├── NowPlayingView.swift
-│   │   └── NowPlayingManager.swift  
-│   ├── Camera/
-│   │   ├── CameraView.swift
-│   │   └── CameraManager.swift      
-│   └── ... (Resto de módulos)
+├── Modules/                     ← Arquitectura Plug & Play
+│   ├── WidgetProtocol.swift     ← Reglas de los widgets (protocol Widget { id, isEnabled })
+│   └── NowPlaying/
+│       ├── MRMediaRemoteBridge.swift ← Puente C puro para saltar el sandbox multimedia
+│       ├── NowPlayingManager.swift   ← Cerebro musical (Radio pública, AppleScript, Seeking)
+│       └── NowPlayingView.swift      ← Interfaz gráfica (Carátula, Slider protegido, controles)
 │
 ├── Settings/
-│   ├── SettingsWindowController.swift 
-│   ├── SettingsView.swift             
-│   └── SettingsViewModel.swift
-│
-├── Permissions/
-│   └── PermissionsManager.swift  ← Orquesta todos los NSAlert de permisos
+│   └── SettingsView.swift       ← Interfaz gráfica para activar/desactivar widgets
 │
 ├── Infrastructure/
-│   ├── AppSettings.swift         ← @AppStorage / UserDefaults wrapper
-│   ├── WidgetRegistry.swift      ← Registro central, orden y estado de módulos
-│   └── MenuBarController.swift   ← Menú contextual de salida y ajustes
+│   ├── AppSettings.swift        ← @AppStorage / UserDefaults para memoria persistente
+│   └── WidgetRegistry.swift     ← Lista centralizada que dice qué widgets dibujar y su orden
 │
 └── Docs/
-    └── Architecture.md           ← Documentación del proyecto
-
+    └── Architecture.md          ← Documentación viva del proyecto
 ---
 
 ## 3. Detalle de la Fase 1: El Núcleo
@@ -79,3 +70,35 @@ En esta fase hemos establecido la base estructural. Cada archivo tiene una respo
 * **`HoverDetector.swift` (El Sensor):** * *Función:* Utiliza `NSEvent.addGlobalMonitorForEvents` para rastrear la posición del puntero a nivel del sistema, incluso cuando el usuario está usando otras aplicaciones (como Safari o WhatsApp). Si el puntero entra en las coordenadas de la ventana, cambia el estado del `PanelViewModel` a expandido. Utiliza variables de estado (`wasInside`) para no saturar el uso de CPU.
 
 
+## 4. Detalle de la Fase 2: Arquitectura Modular (Widget Registry y Ajustes)
+
+El objetivo de esta fase fue evitar el "código espagueti". En lugar de meter todas las funciones en la ventana principal, creamos un sistema modular donde cada función (Música, Cámara, etc.) es un bloque independiente que se "enchufa" a la aplicación.
+
+### Carpeta `Infrastructure`
+* **`WidgetProtocol.swift`:** Define las reglas estrictas de lo que es un widget en nuestra app. Todo widget debe tener un `id`, un booleano `isEnabled`, y una función `makeView()` que devuelve su interfaz gráfica.
+* **`WidgetRegistry.swift`:** Actúa como el centro comercial de los widgets. Es una lista ordenada que mantiene constancia de qué widgets existen y si el usuario los ha activado o desactivado. La vista principal (`NotchPanelView`) solo itera sobre este registro dibujando lo que esté encendido.
+* **`AppSettings.swift`:** Un archivo centralizado usando `@AppStorage` para guardar en la memoria persistente (UserDefaults) del Mac preferencias globales, como por ejemplo si un widget específico está activado o no.
+
+### Carpeta `Settings`
+* **Sistema de Ventanas Independientes:** Se creó una ventana estándar de macOS (AppKit) totalmente desvinculada del panel físico del notch. Se invoca a través del icono de la barra de menús. Contiene el `SettingsViewModel` para interactuar con la infraestructura y permitir al usuario apagar o encender widgets mediante "toggles".
+
+---
+
+## 5. Detalle de la Fase 3 (Parte A): Módulo Multimedia (Now Playing)
+
+Implementar el widget musical nativo en macOS 14+ requiere esquivar restricciones de "Sandbox" y permisos de "Automatización". No usamos `AVPlayer`, 
+sino que controlamos las aplicaciones de música oficiales (Spotify y Apple Music) del usuario.
+
+### Estructura del Módulo `NowPlaying`
+* **`NowPlayingView.swift` (La Interfaz):** Dibuja la carátula, textos y botones. Implementa una lógica defensiva en SwiftUI (usando `max(0, ...)`) para la barra de progreso, evitando "crasheos" silenciosos si el reproductor envía tiempos matemáticamente negativos o desajustados.
+* **`MRMediaRemoteBridge.swift` (El Puente de Comandos):** macOS bloquea el acceso público a sus controles multimedia. Usamos la API de C `dlopen` para forzar la carga de una librería privada de Apple (`MediaRemote.framework`). Esto nos permite enviar las órdenes puras del sistema (Play, Pause, Next Track) saltándonos las restricciones de las APIs de alto nivel.
+
+### `NowPlayingManager.swift` (El Cerebro Multinúcleo)
+Este archivo orquesta un sistema híbrido complejo para obtener información en tiempo real sin gastar batería:
+1. **Radio Pública (`DistributedNotificationCenter`):** Escucha "gritos" silenciosos del sistema. Cuando Spotify o Music cambian de canción, mandan un aviso. Esto es instantáneo y consume 0 recursos, dándonos el Título y Artista.
+2. **Descarga de Carátulas:** Si es Spotify, baja la imagen asíncronamente desde su CDN. Si es Apple Music (o el CDN de Spotify falla), hace una petición a la API pública de `iTunes Search` en alta definición (600x600).
+3. **El Reloj Matemático:** En lugar de preguntar al Mac por el segundo exacto cada segundo (lo que fundiría la CPU), preguntamos *una vez* usando `NSAppleScript`. Guardamos la hora exacta en un `Date()` y calculamos visualmente el progreso con una resta matemática (`Timer.scheduledTimer` a 0.5s), logrando una animación fluida a coste 0 de rendimiento.
+4. **Seeking (Control del Slider):** Al arrastrar el Slider en la interfaz, frenamos la matemática, y al soltar, enviamos una orden `NSAppleScript` ("tell application Spotify to set player position...") para que la canción salte al milisegundo deseado.
+
+### Carpeta `Core`: Permisos de Automatización
+* **`AutomationPermissionManager.swift`:** Para que el "Seeking" vía AppleScript funcione, macOS exige el permiso de *Automatización*. Como `NSAppleScript` falla en silencio y no muestra popups nativos, implementamos la API pura de C `Carbon` (`AEDeterminePermissionToAutomateTarget`). Esto fuerza a macOS a mostrar la alerta de seguridad nativa la primera vez que se abre la app, guardando el permiso permanentemente en los Ajustes del Sistema.

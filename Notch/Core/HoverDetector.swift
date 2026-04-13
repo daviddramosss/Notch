@@ -1,17 +1,8 @@
-//
-//  HoverDetector.swift
-//  Notch
-//
-//  Created by David Ramos on 04/04/2026.
-//
-
 /*
- 
- Este será el archivo más complejo. Usará herramientas del sistema para saber dónde está la flecha de tu ratón en todo momento.
- Por qué: Como nuestro panel está oculto y no roba el foco de otras aplicaciones, necesitamos un "vigilante" global que avise al
- "Cerebro" cuando el ratón toca el borde superior de tu pantalla.
- 
- */
+ Este es el "Cerebro Sensorial" de la app.
+ Ahora no solo detecta el ratón, sino que lee tus Ajustes en tiempo real para saber
+ si debe esperar (Hover Delay), o si debe reaccionar solo a Clics o Dobles Clics.
+*/
 
 import AppKit
 import Combine
@@ -20,56 +11,117 @@ import SwiftUI
 class HoverDetector {
     private weak var panel: NSPanel?
     private weak var viewModel: PanelViewModel?
-    private var globalMonitor: Any?
     
-    // Guardamos el estado anterior para no saturar el procesador de tu M5
-    // calculando cada milímetro que mueves el ratón.
+    private var globalMonitor: Any?
+    private var localMonitor: Any?
+    
+    // Control de estado para no saturar el procesador
     private var wasInside: Bool = false
+    
+    // Temporizador para el "Hover Delay"
+    private var expandTimer: Timer?
 
     init(panel: NSPanel, viewModel: PanelViewModel) {
         self.panel = panel
         self.viewModel = viewModel
-        setupGlobalMonitor()
+        setupMonitors()
     }
 
     deinit {
-        // Limpieza: si la app se cierra, dejamos de espiar al ratón
-        if let monitor = globalMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
+        if let gMonitor = globalMonitor { NSEvent.removeMonitor(gMonitor) }
+        if let lMonitor = localMonitor { NSEvent.removeMonitor(lMonitor) }
+        expandTimer?.invalidate()
     }
 
-    private func setupGlobalMonitor() {
-        // Este monitor "escucha" el ratón a nivel de sistema (incluso si estás usando Safari o Chrome)
-        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-            self?.handleMouseMovement()
+    private func setupMonitors() {
+        // Añadimos .leftMouseDown al radar para detectar los clics
+        let eventsToWatch: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown]
+        
+        globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventsToWatch) { [weak self] event in
+            self?.handleMouseEvent(event)
         }
         
-        // También escuchamos cuando nuestra propia app tiene el foco
-        NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-            self?.handleMouseMovement()
+        localMonitor = NSEvent.addLocalMonitorForEvents(matching: eventsToWatch) { [weak self] event in
+            self?.handleMouseEvent(event)
             return event
         }
     }
 
-    private func handleMouseMovement() {
+    private func handleMouseEvent(_ event: NSEvent) {
         guard let panel = panel, let viewModel = viewModel else { return }
         
-        // Obtenemos las coordenadas exactas del ratón en la pantalla
-        let mouseLocation = NSEvent.mouseLocation
+        // 1. ¿Dónde está el ratón y qué modo tenemos seleccionado?
+        let isInside = panel.frame.contains(NSEvent.mouseLocation)
+        let mode = AppSettings.shared.activationMode
         
-        // ¿Está el ratón dentro del rectángulo de nuestro panel?
-        let isInside = panel.frame.contains(mouseLocation)
-
-        // Si el estado no ha cambiado (sigue dentro, o sigue fuera), no hacemos nada
-        guard isInside != wasInside else { return }
-        wasInside = isInside
-
-        // Si el estado cambia, le avisamos al "Cerebro" (ViewModel)
-        DispatchQueue.main.async {
-            // Usamos una animación suave para que el cambio no sea brusco
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                viewModel.isExpanded = isInside
+        // 2. LÓGICA DE CLICS
+        if event.type == .leftMouseDown {
+            if isInside {
+                if mode == .click {
+                    setExpanded(true)
+                } else if mode == .doubleClick && event.clickCount == 2 {
+                    setExpanded(true)
+                }
+                // (Si es modo Hover, hacer clic también lo abre por comodidad)
+                if mode == .hover {
+                    setExpanded(true)
+                }
+            } else {
+                // Si haces clic fuera del panel, lo cerramos siempre
+                setExpanded(false)
+            }
+        }
+        
+        // 3. LÓGICA DE MOVIMIENTO (Hover y Auto-Cierre)
+        if event.type == .mouseMoved || event.type == .leftMouseDragged {
+            // Solo actuamos si el ratón cruza la frontera (entra o sale)
+            if isInside != wasInside {
+                wasInside = isInside
+                
+                if isInside {
+                    // El ratón acaba de ENTRAR
+                    if mode == .hover {
+                        startHoverTimer()
+                    }
+                } else {
+                    // El ratón acaba de SALIR
+                    cancelHoverTimer()
+                    // Auto-colapso al salir (funciona para todos los modos para que no se quede atascado abierto)
+                    setExpanded(false)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helpers del Temporizador y Animación
+    
+    private func startHoverTimer() {
+        let delay = AppSettings.shared.hoverExpandDelay
+        
+        if delay <= 0 {
+            // Si el delay es 0, abrimos al instante
+            setExpanded(true)
+        } else {
+            // Si hay delay, programamos la apertura
+            expandTimer = Timer.scheduledTimer(withTimeInterval: delay, repeats: false) { [weak self] _ in
+                self?.setExpanded(true)
+            }
+        }
+    }
+    
+    private func cancelHoverTimer() {
+        expandTimer?.invalidate()
+        expandTimer = nil
+    }
+    
+    private func setExpanded(_ expand: Bool) {
+        // Solo animamos si realmente hay un cambio de estado
+        guard viewModel?.isExpanded != expand else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            // Usamos la misma animación elástica que definimos en la Fase 3
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                self?.viewModel?.isExpanded = expand
             }
         }
     }
