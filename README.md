@@ -30,7 +30,7 @@ directamente en la ceja del Mac:
 
 Si quieres profundizar en cómo he estructurado el código, separado las responsabilidades (MVVM) y gestionado la inyección de los módulos, puedes leer
 la documentación completa aquí:
-**[Ver Arquitectura del Proyecto](Docs/Architecture.md)**
+**[Ver Arquitectura del Proyecto](Notch/Docs/Architecture.md)**
 
 ##  Instalación y Uso
 
