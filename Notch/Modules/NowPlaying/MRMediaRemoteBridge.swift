@@ -20,7 +20,7 @@ enum MRKey {
     static let elapsedTime = "kMRMediaRemoteNowPlayingInfoElapsedTime"
 }
 
-// Firmas corregidas de C puro (Usando NSDictionary en lugar de diccionarios de Swift)
+// Firmas C puro (Usando NSDictionary en lugar de diccionarios de Swift)
 typealias MRMediaRemoteGetNowPlayingInfoFunction = @convention(c) (DispatchQueue, @escaping (NSDictionary?) -> Void) -> Void
 typealias MRMediaRemoteSendCommandFunction = @convention(c) (UInt32, NSDictionary?) -> Bool
 
@@ -58,7 +58,7 @@ class MRMediaRemoteBridge {
             return
         }
         
-        // Pedimos a Apple el NSDictionary, y lo traducimos a [String: Any] para nuestro Manager
+        // Pide a Apple el NSDictionary, y lo trade a [String: Any] para el Manager
         fn(DispatchQueue.main) { dict in
             completion(dict as? [String: Any])
         }

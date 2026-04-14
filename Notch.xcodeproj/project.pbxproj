@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		637AC0FC2F8E3BB5008A0C7E /* README.dm in Resources */ = {isa = PBXBuildFile; fileRef = 637AC0FB2F8E3BAA008A0C7E /* README.dm */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		6311D6052F811DFC001BA982 /* Notch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Notch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		637AC0FB2F8E3BAA008A0C7E /* README.dm */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.dm; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -47,6 +52,7 @@
 			children = (
 				6311D6072F811DFC001BA982 /* Notch */,
 				6311D6062F811DFC001BA982 /* Products */,
+				637AC0FB2F8E3BAA008A0C7E /* README.dm */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +128,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				637AC0FC2F8E3BB5008A0C7E /* README.dm in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -268,7 +275,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Notch/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "NotchPanel necesita controlar Spotify y Apple Music para los controles multimedia.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NotchPanel necesita acceso al Bluetooth";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NotchPanel necesita leer tus eventos para mostrarlos en el notch.";
@@ -304,7 +312,8 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Notch/Info.plist;
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "NotchPanel necesita controlar Spotify y Apple Music para los controles multimedia.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "NotchPanel necesita acceso al Bluetooth";
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "NotchPanel necesita leer tus eventos para mostrarlos en el notch.";

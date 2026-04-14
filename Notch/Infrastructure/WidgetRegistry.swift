@@ -1,6 +1,6 @@
 /*
  
- Es la única clase de toda tu aplicación que sabe qué widgets existen, en qué orden están y si están encendidos o apagados.
+ Es la única clase de toda la aplicación que sabe qué widgets existen, en qué orden están y si están encendidos o apagados.
  
  */
 
@@ -13,31 +13,31 @@ import Combine
 @MainActor
 class WidgetRegistry: ObservableObject {
     
-    // Nuestro Gerente es único (Patrón Singleton)
+    //El Gerente es único (Patrón Singleton)
     static let shared = WidgetRegistry()
     
     // Listas reactivas: Si cambian, la interfaz gráfica se redibuja sola
     @Published private(set) var orderedWidgets: [WidgetID] = []
     @Published private(set) var activeWidgets: Set<WidgetID> = []
     
-    // Aquí guardamos los "motores" de cada widget
+    // Aquí guarda los "motores" de cada widget
     private var managers: [WidgetID: any NotchWidget] = [:]
     
-    // Conectamos al gerente con la memoria a largo plazo
+    // Conecta al gerente con la memoria a largo plazo
     private var settings = AppSettings.shared
     
     private init() {
-        // 1. Al arrancar, leemos la memoria para ver cómo lo dejó el usuario la última vez
+        // 1. Al arrancar, lee la memoria para ver cómo lo dejó el usuario la última vez
         orderedWidgets = settings.widgetOrder
         activeWidgets  = Set(settings.enabledWidgets)
         
-        // 2. AQUÍ ENCHUFAMOS LOS MÓDULOS (Los comentamos por ahora para no dar error en Xcode)
+        // 2. Enchufo los modulos
          register(NowPlayingManager())
          register(CalendarWidgetManager())
          register(CameraManager())
         // register(DropzoneManager())
         
-        // 3. Encendemos los motores de los widgets que estaban activos
+        // 3. Enciende los motores de los widgets que estaban activos
         activeWidgets.forEach { activate($0) }
     }
     
@@ -57,14 +57,14 @@ class WidgetRegistry: ObservableObject {
             activeWidgets.remove(id)
             deactivate(id)
         }
-        // Guardamos el cambio en el disco duro
+        // Guarda el cambio en el disco duro
         settings.enabledWidgets = Array(activeWidgets)
     }
     
     // Cambia el orden de los widgets (Se usará al arrastrar y soltar en Ajustes)
     func move(from source: IndexSet, to destination: Int) {
         orderedWidgets.move(fromOffsets: source, toOffset: destination)
-        // Guardamos el nuevo orden en el disco duro
+        // Guarda el nuevo orden en el disco duro
         settings.widgetOrder = orderedWidgets
     }
     

@@ -1,6 +1,6 @@
 /*
  Muestra la interfaz de reproducción de música.
- Diseño actualizado: Carátula grande a la izquierda. A la derecha, una columna
+ Diseño: Carátula grande a la izquierda. A la derecha, una columna
  con dos filas: arriba (Título/Artista + Controles) y abajo (Slider de tiempo).
  */
 import SwiftUI

@@ -26,11 +26,9 @@ struct CameraView: View {
                 Circle()
                     .fill(Color(white: 0.12))
                 
-                // La pantalla NUNCA se destruye para que no haya crash.
-                // Le pasamos "isRunning" para que sepa cuándo aplicar el efecto espejo.
                 CameraPreviewView(session: manager.session, isRunning: manager.isRunning)
                     .clipShape(Circle())
-                    // Si apagamos el botón, la hacemos invisible
+                    // Si apaga el botón, la hace invisible
                     .opacity((isMirrorActive && manager.isRunning) ? 1 : 0)
                 
                 // Textos e icono por encima cuando está apagado
@@ -71,7 +69,6 @@ class VideoPreviewNSView: NSView {
         self.previewLayer.frame = self.bounds
     }
     
-    // Función manual que llamamos solo cuando sabemos que es seguro
     func applyMirrorEffect() {
         if let connection = self.previewLayer.connection, connection.isVideoMirroringSupported {
             connection.automaticallyAdjustsVideoMirroring = false

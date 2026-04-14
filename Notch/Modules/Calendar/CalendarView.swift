@@ -15,7 +15,7 @@ struct CalendarView: View {
                 
                 weekDaysHeader(availableWidth: geo.size.width)
                 
-                VStack(alignment: .center, spacing: 2) { // Ultra compacto
+                VStack(alignment: .center, spacing: 2) {
                     if manager.permissionDenied {
                         permissionPrompt
                     } else if manager.events.isEmpty {

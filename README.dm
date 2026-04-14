@@ -1,8 +1,5 @@
 # NotchPanel
 
-> Un 'Dynamic Island' hipervitaminado y nativo para macOS, desarrollado de cero para explorar los límites arquitectónicos entre AppKit y SwiftUI.
-
-
 ## Sobre el proyecto
 
 He desarrollado NotchPanel como un reto técnico personal para mi portfolio. El objetivo era construir un clon funcional de utilidades como *Notch

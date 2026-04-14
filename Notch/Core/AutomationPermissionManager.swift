@@ -42,7 +42,7 @@ class AutomationPermissionManager {
         
         // Forma segura de pasar un string de Swift a C
         bundleID.withCString { cString in
-            // Envolvemos la función en OSStatus() para igualar el tamaño
+            // Envuelta la función en OSStatus() para igualar el tamaño
             err = OSStatus(AECreateDesc(
                 typeApplicationBundleID,
                 cString,

@@ -1,10 +1,3 @@
-/*
- Diseño unificado y funcionalidad corregida.
- - Corrige el bug del texto invisible pasándole explícitamente "isEmpty".
- - Empuja los recuadros hacia arriba con un padding inferior.
- - Unifica el .onDrop a .fileURL para que no falle al soltar archivos.
-*/
-
 import SwiftUI
 import UniformTypeIdentifiers
 import AppKit
@@ -21,7 +14,7 @@ struct DropzoneView: View {
             //IZQUIERDA: Files Tray
             DropTargetView(
                 isTargeted: $isTargetedFiles,
-                isEmpty: manager.items.isEmpty, // Le decimos explícitamente si está vacío
+                isEmpty: manager.items.isEmpty,
                 icon: "tray",
                 title: "Files Tray",
                 subtitle: "(Arrastra Archivos aqui)"
@@ -66,7 +59,7 @@ struct DropzoneView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            //Usamos solo .fileURL igual que en AirDrop
+            
             .onDrop(of: [.fileURL], isTargeted: $isTargetedFiles) { providers in
                 return manager.handleDrop(providers: providers)
             }
@@ -87,10 +80,10 @@ struct DropzoneView: View {
             }
             
         }
+        .frame(height: 115)
         .padding(.horizontal, 22)
         .padding(.top, 12)
-        //Empujamos los recuadros hacia arriba para que no choquen
-        .padding(.bottom, 28)
+        
     }
 }
 
@@ -149,7 +142,7 @@ struct DropTargetView<Content: View>: View {
                 }
             }
             .padding()
-            //Ahora usa la variable isEmpty de forma segura
+            
             .opacity(isTargeted ? 1 : (isEmpty ? 1 : 0))
             
             // Archivos guardados

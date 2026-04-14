@@ -1,7 +1,7 @@
 
 /*
  
- Es el cerebro de nuestro widget. Coge los datos que le da el puente, los formatea, crea los temporizadores y le dice a la vista qué tiene que
+ Es el cerebro del widget. Coge los datos que le da el puente, los formatea, crea los temporizadores y le dice a la vista qué tiene que
  dibujar.
  
  */
@@ -61,7 +61,7 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         center.addObserver(self, selector: #selector(appleMusicChanged(_:)), name: NSNotification.Name("com.apple.Music.playerInfo"), object: nil)
     }
     
-    // CORRECCIÓN: Pasamos la fuente directamente para evitar el bug de milisegundos
+    //Pasa la fuente directamente para evitar el bug de milisegundos
     @objc private func appleMusicChanged(_ notification: Notification) {
         guard let info = notification.userInfo else { return }
         updateCoreState(info: info, newSource: .appleMusic)
@@ -90,7 +90,7 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
                 self.trackStartDate = (state == "Playing" || state == "Playing ") ? Date() : nil
                 self.trackElapsedAtStart = 0
                 
-                // ·CORRECCIÓN: Si es Spotify y no manda foto, usamos el Plan B de iTunes
+                //Si es Spotify y no manda foto, usamos el fallback de iTunes
                 if isSpotify {
                     if let urlStr = info["art_url"] as? String, let url = URL(string: urlStr) {
                         self.fetchArtwork(from: url)
@@ -188,10 +188,9 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
                 var error: NSDictionary?
                 let descriptor = scriptObject.executeAndReturnError(&error)
                 
-                // 👇 CORRECCIÓN: Extraemos los datos directamente sin el 'if let'
                 let data = descriptor.data
                 
-                // Ahora sí comprobamos si esos datos pueden formar una imagen válida
+                //Comprueba si esos datos pueden formar una imagen válida
                 if let image = NSImage(data: data) {
                     DispatchQueue.main.async { self?.artwork = image }
                 } else {

@@ -43,7 +43,7 @@ class CameraManager: ObservableObject, NotchWidget {
     
     private func setupAndStart() {
         cameraQueue.async {
-            // 1. Enchufamos cables SOLO si no lo hemos hecho antes
+            // 1. Enchu cables SOLO si no se ha hecho antes
             if !self.isConfigured {
                 self.session.beginConfiguration()
                 self.session.sessionPreset = .low
@@ -54,10 +54,10 @@ class CameraManager: ObservableObject, NotchWidget {
                     self.session.addInput(videoInput)
                 }
                 self.session.commitConfiguration()
-                self.isConfigured = true // Cerramos el candado
+                self.isConfigured = true
             }
             
-            // 2. Encendemos el motor
+            // 2. Enciende el motor
             if !self.session.isRunning {
                 self.session.startRunning()
                 DispatchQueue.main.async { self.isRunning = true }

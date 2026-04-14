@@ -3,10 +3,10 @@ import SwiftUI
 
 class AppDelegate: NSObject, NSApplicationDelegate {
 
-    // Instanciamos el Cerebro (ViewModel)
+    // Instancio el Cerebro (ViewModel)
     var panelViewModel = PanelViewModel()
     
-    // Instanciamos nuestros controladores
+    // Instancio loa controladores
     var windowController: PanelWindowController!
     var hoverDetector: HoverDetector!
     
@@ -23,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             await PermissionsManager.shared.requestAll()
         }
         
-        // El Oído Biónico: Escucha si alguien pulsa el engranaje del Notch
+        //Escucha si alguien pulsa el engranaje del Notch
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(openSettings),
@@ -32,7 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
     
-    // Limpiamos la memoria si la app se cierra
+    // Limpio la memoria si la app se cierra
     deinit {
         NotificationCenter.default.removeObserver(self)
     }

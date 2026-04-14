@@ -426,13 +426,13 @@ struct GeneralSettingsSection: View {
     private func toggleLaunchAtLogin(enable: Bool) {
         do {
             if enable {
-                // Le pedimos a macOS que nos añada a la lista
+                //Pide a macOS que añada a la lista
                 try SMAppService.mainApp.register()
             } else {
-                // Le pedimos a macOS que nos quite de la lista
+                //Pide a macOS que quite de la lista
                 try SMAppService.mainApp.unregister()
             }
-            // Si funciona, actualizamos el interruptor visualmente
+            // Si funciona, actualiza el interruptor visualmente
             isLaunchAtLoginEnabled = enable
         } catch {
             print("Error al configurar el arranque del sistema: \(error.localizedDescription)")
@@ -526,8 +526,8 @@ struct AppearanceSettingsSection: View {
         // Envolvemos los cambios en withAnimation para que los sliders se muevan suavemente
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             settings.useMaterialBackground = true
-            settings.expandedHeight = 165.0 // Tu altura base
-            settings.cornerRadius = 30.0    // Tu redondeo base
+            settings.expandedHeight = 165.0 
+            settings.cornerRadius = 30.0
         }
     }
 }

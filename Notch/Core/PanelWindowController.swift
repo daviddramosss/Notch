@@ -44,7 +44,7 @@ class PanelWindowController {
         let hostingView = NSHostingView(rootView: rootView)
         panel.contentView = hostingView
         
-        // Enmascaramos el panel directamente para que la curva no se corte
+        // Se enmascara el panel directamente para que la curva no se corte
         hostingView.wantsLayer = true
         hostingView.layer?.masksToBounds = true
         hostingView.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]

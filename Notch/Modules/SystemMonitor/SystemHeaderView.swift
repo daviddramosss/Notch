@@ -11,7 +11,6 @@ struct SystemHeaderView: View {
     @StateObject private var sysManager = SystemMonitorManager()
     @StateObject private var btManager = BluetoothManager()
     
-    // 👀 Le decimos a la vista que vigile los ajustes en tiempo real
     @ObservedObject private var settings = AppSettings.shared
     
     var body: some View {

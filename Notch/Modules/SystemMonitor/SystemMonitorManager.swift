@@ -1,6 +1,6 @@
 /*
  
- Este archivo usa comandos muy profundos de Apple (lenguaje C) para leer el procesador y la memoria sin gastar apenas batería.
+ Este archivo usa comandos (lenguaje C) para leer el procesador y la memoria sin gastar apenas batería.
  
  */
 
@@ -21,12 +21,12 @@ class SystemMonitorManager: ObservableObject {
     private var previousCPUInfo: processor_info_array_t?
     private var previousCPUInfoCount: mach_msg_type_number_t = 0
     
-    // Arrancamos el motor: lee los datos cada 2 segundos
+    // Arranca el motor: lee los datos cada 2 segundos
     func startMonitoring() {
         // Primera lectura inmediata
         updateStats()
         
-        // Configuramos el reloj
+        // Configura el reloj
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.updateStats()
         }
@@ -36,7 +36,7 @@ class SystemMonitorManager: ObservableObject {
         timer?.invalidate()
         timer = nil
         
-        // Limpiamos la memoria para evitar fugas (Memory Leaks)
+        // Limpia la memoria para evitar fugas (Memory Leaks)
         if let prevInfo = previousCPUInfo {
             let prevCpuInfoSize = Int(previousCPUInfoCount) * MemoryLayout<integer_t>.stride
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: prevInfo), vm_size_t(prevCpuInfoSize))
@@ -96,12 +96,12 @@ class SystemMonitorManager: ObservableObject {
                 totalUsage = Double(totalUser + totalSystem + totalNice) / Double(total)
             }
             
-            // Limpiamos la memoria de la lectura anterior
+            // Limpia la memoria de la lectura anterior
             let prevCpuInfoSize = Int(previousCPUInfoCount) * MemoryLayout<integer_t>.stride
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: prevCPUInfo), vm_size_t(prevCpuInfoSize))
         }
         
-        // Guardamos la lectura actual para la próxima comparación
+        // Guarda la lectura actual para la próxima comparación
         previousCPUInfo = cpuInfo
         previousCPUInfoCount = numCPUInfo
         

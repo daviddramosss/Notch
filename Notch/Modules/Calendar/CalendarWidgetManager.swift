@@ -91,8 +91,8 @@ class CalendarWidgetManager: ObservableObject, NotchWidget {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
 
-        // Buscamos desde ahora hasta el final del día
-        // pero también incluimos eventos en curso que empezaron antes
+        // Busca desde ahora hasta el final del día
+        // pero también incluye eventos en curso que empezaron antes
         guard let endOfDay = calendar.date(
             byAdding: .day, value: 1, to: startOfDay
         ) else { return }

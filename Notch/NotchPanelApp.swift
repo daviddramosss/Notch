@@ -6,7 +6,6 @@ struct NotchPanelApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
 
     var body: some Scene {
-        // Al usar Settings con EmptyView, le decimos a macOS que no queremos ventana por defecto.
         Settings {
             EmptyView()
         }

@@ -1,6 +1,6 @@
 /*
  Este es el "Cerebro Sensorial" de la app.
- Ahora no solo detecta el ratón, sino que lee tus Ajustes en tiempo real para saber
+ Ahora no solo detecta el ratón, sino que lee Ajustes en tiempo real para saber
  si debe esperar (Hover Delay), o si debe reaccionar solo a Clics o Dobles Clics.
 */
 
@@ -34,7 +34,7 @@ class HoverDetector {
     }
 
     private func setupMonitors() {
-        // Añadimos .leftMouseDown al radar para detectar los clics
+        //.leftMouseDown al radar para detectar los clics
         let eventsToWatch: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .leftMouseDown]
         
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: eventsToWatch) { [weak self] event in
@@ -48,13 +48,12 @@ class HoverDetector {
     }
 
     private func handleMouseEvent(_ event: NSEvent) {
-        guard let panel = panel, let viewModel = viewModel else { return }
+        guard let panel = panel, let _viewModel = viewModel else { return }
         
-        // 1. ¿Dónde está el ratón y qué modo tenemos seleccionado?
         let isInside = panel.frame.contains(NSEvent.mouseLocation)
         let mode = AppSettings.shared.activationMode
         
-        // 2. LÓGICA DE CLICS
+        // LÓGICA DE CLICS
         if event.type == .leftMouseDown {
             if isInside {
                 if mode == .click {
@@ -67,14 +66,14 @@ class HoverDetector {
                     setExpanded(true)
                 }
             } else {
-                // Si haces clic fuera del panel, lo cerramos siempre
+                // Si hace clic fuera del panel, se cierra
                 setExpanded(false)
             }
         }
         
-        // 3. LÓGICA DE MOVIMIENTO (Hover y Auto-Cierre)
+        //LÓGICA DE MOVIMIENTO (Hover y Auto-Cierre)
         if event.type == .mouseMoved || event.type == .leftMouseDragged {
-            // Solo actuamos si el ratón cruza la frontera (entra o sale)
+            // Solo actua si el ratón cruza la frontera (entra o sale)
             if isInside != wasInside {
                 wasInside = isInside
                 
@@ -99,7 +98,7 @@ class HoverDetector {
         let delay = AppSettings.shared.hoverExpandDelay
         
         if delay <= 0 {
-            // Si el delay es 0, abrimos al instante
+            // Si el delay es 0, se abre al instante
             setExpanded(true)
         } else {
             // Si hay delay, programamos la apertura
@@ -119,7 +118,6 @@ class HoverDetector {
         guard viewModel?.isExpanded != expand else { return }
         
         DispatchQueue.main.async { [weak self] in
-            // Usamos la misma animación elástica que definimos en la Fase 3
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 self?.viewModel?.isExpanded = expand
             }

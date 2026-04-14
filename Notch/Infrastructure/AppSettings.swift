@@ -1,23 +1,16 @@
 /*
  
- AppSettings es la memoria a largo plazo de tu aplicación.
+ AppSettings es la memoria a largo plazo de la aplicación.
 
- Si no tuviéramos este archivo, cada vez que cerraras la aplicación y la volvieras a abrir, el Mac olvidaría cómo habías
- configurado tu notch. Si habías decidido apagar la cámara y poner el panel a 400 píxeles de ancho, al reiniciar volvería a estar
+ Si no tuviéramos este archivo, cada vez que se cierra la aplicación y se volviera a abrir, el Mac olvidaría cómo estaba
+ configurado el notch. Si habías decidido apagar la cámara y poner el panel a 400 píxeles de ancho, al reiniciar volvería a estar
  la cámara encendida y el panel a 320 píxeles.
 
  AppSettings soluciona esto usando una herramienta mágica de Apple llamada @AppStorage.
 
- ¿Qué hace @AppStorage? Guarda automáticamente cualquier variable directamente en el disco duro de tu Mac (en un archivo del
- sistema llamado UserDefaults). No tienes que darle a "Guardar", se hace solo en tiempo real.
+ @AppStorage guarda automáticamente cualquier variable directamente en el disco duro de tu Mac (en un archivo del
+ sistema llamado UserDefaults). No hay que darle a "Guardar", se hace solo en tiempo real.
 
- El truco de la traducción: El disco duro de Mac es un poco tonto y solo sabe guardar cosas simples (texto o números). No sabe
- guardar listas complejas de Swift (Arrays). Por eso, en el código, cogemos tu lista de widgets activos [camera, nowPlaying] y la
- convertimos en un texto simple "camera,now_playing" para guardarla. Cuando abres la app, AppSettings lee ese texto y lo vuelve a
- convertir en una lista para que el resto del código lo entienda.
-
- El patrón "Singleton" (static let shared): Esto asegura que solo exista una copia de los ajustes en toda la app. Si la ventana de
- preferencias cambia el tamaño, el notch lee exactamente de la misma hoja de papel y se actualiza al instante.
  */
 
 import SwiftUI
@@ -28,7 +21,7 @@ class AppSettings: ObservableObject {
     static let shared = AppSettings()
     
     // --------------------------------------------------------
-    // 1. ESTADO Y ORDEN DE LOS WIDGETS (Sincronizado con tu Enum)
+    // 1. ESTADO Y ORDEN DE LOS WIDGETS (Sincronizado Enum)
     // Por defecto: Música, Calendario y Cámara (Espejo)
     @AppStorage("enabled_widgets_raw") private var enabledWidgetsRaw: String = "[\"now_playing\", \"calendar\", \"camera\"]"
     
@@ -130,7 +123,7 @@ enum AccentColorOption: String, CaseIterable, Codable {
 }
 
 // MARK: - EXTENSIÓN VISUAL
-// Usamos los cases tal cual los tienes definidos en tu Enum
+// Uso de los cases tal cual definidos en Enum
 extension WidgetID {
     var displayName: String {
         switch self {
