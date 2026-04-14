@@ -36,7 +36,7 @@ la documentación completa aquí:
 
 Si quieres probar la aplicación en tu propio Mac (Requiere macOS 13+):
 
-1. Ve a la pestaña de [Releases](enlace_a_tus_releases_en_github) y descarga el último archivo `NotchPanel.app.zip`.
+1. Ve a la pestaña de [Releases](https://github.com/daviddramosss/Notch/releases) y descarga el último archivo `NotchPanel.app.zip`.
 2. Descomprímelo y arrastra la app a tu carpeta de **Aplicaciones**.
 3. **Importante:** Como es un proyecto Open Source no firmado mediante el programa de pago de Apple, la primera vez que la abras debes hacer **Clic Derecho > Abrir** (y confirmar la excepción de seguridad de macOS).
 4. Pasa el ratón por el Notch de tu cámara para desplegar el panel. Aparecerá un icono de un engranaje arriba a la derecha para acceder a los **Ajustes**.
