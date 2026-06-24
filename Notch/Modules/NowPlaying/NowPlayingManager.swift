@@ -434,7 +434,7 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
             break
         }
     }
-    
+
     func skipPrevious() {
         switch resolveActiveTarget() {
         case .spotify:
@@ -443,6 +443,41 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
             executeAppleScript("tell application \"Music\" to previous track")
         case .unavailable:
             break
+        }
+    }
+    // MARK: - [FEATURE-3] Deep Linking a la app de origen
+    func openSourceApp() {
+        let appName: String
+        let bundleID: String
+        switch resolveActiveTarget() {
+        case .spotify:
+            appName = "Spotify"
+            bundleID = "com.spotify.client"
+        case .appleMusic:
+            appName = "Music"
+            bundleID = "com.apple.Music"
+        case .unavailable:
+            return
+        }
+        
+        // AppleScript fuerza desminiaturizar + traer al frente en un solo paso
+        let script = """
+        tell application "\(appName)"
+            reopen
+            activate
+        end tell
+        """
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            var error: NSDictionary?
+            NSAppleScript(source: script)?.executeAndReturnError(&error)
+            
+            // Cinturón de seguridad: activate nativo por si AppleScript tarda
+            DispatchQueue.main.async {
+                NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+                    .first?
+                    .activate()
+            }
         }
     }
 }

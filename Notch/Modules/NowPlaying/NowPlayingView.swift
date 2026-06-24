@@ -111,6 +111,13 @@ struct NowPlayingView: View {
             
             sourceAppIcon.offset(x: 6, y: 6)
         }
+        //Click en carátula abre la app de origen
+        .onTapGesture { manager.openSourceApp() }
+        .onHover { hovering in
+            if manager.canControlPlayback {
+                if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+            }
+        }
     }
     
     @ViewBuilder
