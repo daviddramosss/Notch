@@ -1,6 +1,6 @@
 # NotchPanel
 
-## Sobre el proyecto
+## Sobre el proyecto  a
 
 He desarrollado NotchPanel como un reto técnico personal para mi portfolio. El objetivo era construir un clon funcional de utilidades como *Notch
 Nook*, superando la gran limitación del framework moderno de Apple
