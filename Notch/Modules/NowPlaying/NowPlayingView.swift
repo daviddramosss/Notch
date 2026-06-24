@@ -52,6 +52,9 @@ struct NowPlayingView: View {
                         }
                         .foregroundColor(.white)
                         .buttonStyle(.plain)
+                        // [FIX-2] Desactiva controles si no hay reproductor nativo
+                        .opacity(manager.canControlPlayback ? 1.0 : 0.3)
+                        .allowsHitTesting(manager.canControlPlayback)
                     }
                 }
                 

@@ -32,6 +32,9 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
     
     @Published var source: MusicSource = .none
     @Published var isDraggingSlider: Bool = false
+    // Indica a la View si hay un reproductor nativo controlable.
+    // Si es false, los botones se desactivan para no enviar comandos al navegador.
+    @Published var canControlPlayback: Bool = false
     
     private var progressTimer: Timer?
     private var trackStartDate: Date?
@@ -162,8 +165,55 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
             }
             
             if isSpotify { self.fetchSpotifyPosition() }
+            
+            self.refreshCanControlPlayback()
         }
     }
+    
+    // MARK: - Targeting de comandos por app nativa
+        
+        private enum PlaybackTarget {
+            case spotify
+            case appleMusic
+            case unavailable
+        }
+        
+        private func resolveActiveTarget() -> PlaybackTarget {
+            let spotifyRunning = !NSRunningApplication.runningApplications(
+                withBundleIdentifier: "com.spotify.client"
+            ).isEmpty
+            let musicRunning = !NSRunningApplication.runningApplications(
+                withBundleIdentifier: "com.apple.Music"
+            ).isEmpty
+            
+            // Prioriza la fuente que reportan las notificaciones
+            switch source {
+            case .spotify:
+                if spotifyRunning { return .spotify }
+                if musicRunning  { return .appleMusic }
+            case .appleMusic:
+                if musicRunning  { return .appleMusic }
+                if spotifyRunning { return .spotify }
+            default:
+                // Sin fuente conocida — probamos en orden de preferencia
+                if spotifyRunning { return .spotify }
+                if musicRunning  { return .appleMusic }
+            }
+            
+            return .unavailable
+        }
+        
+        private func executeAppleScript(_ script: String) {
+            DispatchQueue.global(qos: .userInitiated).async {
+                var error: NSDictionary?
+                NSAppleScript(source: script)?.executeAndReturnError(&error)
+                if let err = error { print("Error AppleScript comando: \(err)") }
+            }
+        }
+        
+        private func refreshCanControlPlayback() {
+            canControlPlayback = resolveActiveTarget() != .unavailable
+        }
     
     // MARK: - El Reloj Matemático
     private func startProgressTimer() {
@@ -193,13 +243,13 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         DispatchQueue.global(qos: .userInitiated).async {
             var error: NSDictionary?
             NSAppleScript(source: script)?.executeAndReturnError(&error)
-            if let err = error { print("❌ Error en Seek: \(err)") }
+            if let err = error { print(" Error en Seek: \(err)") }
         }
     }
     
     // MARK: - Descarga de Artwork (con protección de generación)
     
-    // [FIX-1.3] Todas las funciones de fetch reciben el token de generación.
+    // Todas las funciones de fetch reciben el token de generación.
     // Al completar, comprueban que la generación siga siendo la actual.
     // Si la pista cambió durante la descarga, el resultado se descarta.
     
@@ -355,10 +405,44 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         trackStartDate = nil; trackElapsedAtStart = 0; source = .none
         currentTrackKey = ""
         artworkFetchGeneration &+= 1  // Invalida cualquier fetch en vuelo al limpiar
+        canControlPlayback = false
     }
     
     func makeView() -> some View { NowPlayingView().environmentObject(self) }
-    func togglePlayPause() { _ = MRMediaRemoteBridge.shared.send(.togglePlayPause) }
-    func skipNext() { _ = MRMediaRemoteBridge.shared.send(.nextTrack) }
-    func skipPrevious() { _ = MRMediaRemoteBridge.shared.send(.previousTrack) }
+    
+    // Comandos enrutados vía AppleScript a la app específica.
+    // MRMediaRemoteSendCommand se elimina del path de comandos porque
+    // envía al "Now Playing client" global del sistema (puede ser Chrome/Safari).
+    func togglePlayPause() {
+        switch resolveActiveTarget() {
+        case .spotify:
+            executeAppleScript("tell application \"Spotify\" to playpause")
+        case .appleMusic:
+            executeAppleScript("tell application \"Music\" to playpause")
+        case .unavailable:
+            break
+        }
+    }
+    
+    func skipNext() {
+        switch resolveActiveTarget() {
+        case .spotify:
+            executeAppleScript("tell application \"Spotify\" to next track")
+        case .appleMusic:
+            executeAppleScript("tell application \"Music\" to next track")
+        case .unavailable:
+            break
+        }
+    }
+    
+    func skipPrevious() {
+        switch resolveActiveTarget() {
+        case .spotify:
+            executeAppleScript("tell application \"Spotify\" to previous track")
+        case .appleMusic:
+            executeAppleScript("tell application \"Music\" to previous track")
+        case .unavailable:
+            break
+        }
+    }
 }
