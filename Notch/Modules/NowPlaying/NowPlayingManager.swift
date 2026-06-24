@@ -37,6 +37,19 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
     private var trackStartDate: Date?
     private var trackElapsedAtStart: Double = 0
     
+    // [FIX-1.1] Identidad compuesta de pista.
+    // Antes solo comparábamos el título, lo cual fallaba con pistas
+    // de nombre idéntico (remixes, "Intro", versiones live).
+    // Ahora combinamos título + artista + álbum como clave única.
+    private var currentTrackKey: String = ""
+    
+    // [FIX-1.3] Token de generación para invalidar fetches obsoletos.
+    // Cada cambio de pista incrementa este contador. Cada descarga de
+    // artwork captura el valor al inicio y lo compara al terminar.
+    // Si no coincide, el resultado se descarta silenciosamente.
+    // Esto elimina la race condition A→B→C sin necesidad de cancelar tasks.
+    private var artworkFetchGeneration: UInt64 = 0
+    
     override init() {
         super.init()
     }
@@ -61,7 +74,6 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         center.addObserver(self, selector: #selector(appleMusicChanged(_:)), name: NSNotification.Name("com.apple.Music.playerInfo"), object: nil)
     }
     
-    //Pasa la fuente directamente para evitar el bug de milisegundos
     @objc private func appleMusicChanged(_ notification: Notification) {
         guard let info = notification.userInfo else { return }
         updateCoreState(info: info, newSource: .appleMusic)
@@ -76,36 +88,56 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             
-            // Asignamos la fuente correcta INSTANTÁNEAMENTE para que salga el logo
             self.source = newSource
             
             if self.isDraggingSlider { return }
             
-            let newTitle = info["Name"] as? String ?? ""
-            let state = info["Player State"] as? String ?? ""
+            let newTitle  = info["Name"] as? String ?? ""
+            let newArtist = info["Artist"] as? String ?? ""
+            let newAlbum  = info["Album"] as? String ?? ""
+            let state     = info["Player State"] as? String ?? ""
             let isSpotify = (newSource == .spotify)
             
-            if newTitle != self.songTitle {
+            // [FIX-1.1] Identidad compuesta en vez de solo título
+            let incomingTrackKey = "\(newTitle)|\(newArtist)|\(newAlbum)"
+            let trackDidChange = (incomingTrackKey != self.currentTrackKey)
+            
+            if trackDidChange {
+                self.currentTrackKey = incomingTrackKey
+                
+                // [FIX-1.2] Invalida la carátula ANTES de pedir la nueva.
+                // La View verá nil y mostrará el placeholder inmediatamente,
+                // eliminando el estado visual "carátula vieja con título nuevo".
+                self.artwork = nil
+                
+                // [FIX-1.3] Incrementa la generación para matar fetches en vuelo
+                self.artworkFetchGeneration &+= 1
+                let fetchGen = self.artworkFetchGeneration
+                
                 self.elapsed = 0
                 self.trackStartDate = (state == "Playing" || state == "Playing ") ? Date() : nil
                 self.trackElapsedAtStart = 0
                 
-                //Si es Spotify y no manda foto, usamos el fallback de iTunes
                 if isSpotify {
-                    if let urlStr = info["art_url"] as? String, let url = URL(string: urlStr) {
-                        self.fetchArtwork(from: url)
+                    // Intento 1: URL directa de la notificación (clave variable entre versiones)
+                    let artURLString = info["art_url"] as? String
+                        ?? info["Album Art URL"] as? String
+                        ?? info["artUrl"] as? String
+                    
+                    if let urlStr = artURLString, let url = URL(string: urlStr) {
+                        self.fetchArtwork(from: url, generation: fetchGen)
                     } else {
-                        let currentArtist = info["Artist"] as? String ?? ""
-                        self.fetchArtworkFromiTunes(title: newTitle, artist: currentArtist)
+                        // Intento 2: AppleScript directo a Spotify (100% fiable)
+                        self.fetchSpotifyArtwork(generation: fetchGen)
                     }
                 } else {
-                    self.fetchArtworkFromMusicApp()
+                    self.fetchArtworkFromMusicApp(generation: fetchGen)
                 }
             }
             
             self.songTitle = newTitle
-            self.artist = info["Artist"] as? String ?? ""
-            self.album = info["Album"] as? String ?? ""
+            self.artist    = newArtist
+            self.album     = newAlbum
             
             if let dur = info["Total Time"] as? Double, !isSpotify {
                 self.duration = dur / 1000.0
@@ -165,60 +197,128 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         }
     }
     
-    // MARK: - Descarga de Imágenes
-    private func fetchArtwork(from url: URL) {
+    // MARK: - Descarga de Artwork (con protección de generación)
+    
+    // [FIX-1.3] Todas las funciones de fetch reciben el token de generación.
+    // Al completar, comprueban que la generación siga siendo la actual.
+    // Si la pista cambió durante la descarga, el resultado se descarta.
+    
+    private func fetchArtwork(from url: URL, generation: UInt64) {
         URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
-            guard let data = data, error == nil, let image = NSImage(data: data) else { return }
-            DispatchQueue.main.async { self?.artwork = image }
+            guard let self = self,
+                  let data = data,
+                  error == nil,
+                  let image = NSImage(data: data) else { return }
+            
+            DispatchQueue.main.async {
+                // [FIX-1.3] ¿Sigue siendo la misma pista que pidió esta descarga?
+                guard self.artworkFetchGeneration == generation else { return }
+                self.artwork = image
+            }
         }.resume()
     }
     
-    
-    private func fetchArtworkFromMusicApp() {
-            let script = """
-            tell application "Music"
-                try
-                    set theArtwork to raw data of artwork 1 of current track
-                    return theArtwork
-                end try
-            end tell
-            """
-            DispatchQueue.global(qos: .background).async { [weak self] in
-                guard let scriptObject = NSAppleScript(source: script) else { return }
-                var error: NSDictionary?
-                let descriptor = scriptObject.executeAndReturnError(&error)
+    private func fetchArtworkFromMusicApp(generation: UInt64) {
+        let script = """
+        tell application "Music"
+            try
+                set theArtwork to raw data of artwork 1 of current track
+                return theArtwork
+            end try
+        end tell
+        """
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            
+            // [FIX-1.3] Comprobación temprana antes de ejecutar AppleScript (caro)
+            guard self.artworkFetchGeneration == generation else { return }
+            
+            guard let scriptObject = NSAppleScript(source: script) else { return }
+            var error: NSDictionary?
+            let descriptor = scriptObject.executeAndReturnError(&error)
+            let data = descriptor.data
+            
+            DispatchQueue.main.async {
+                // [FIX-1.3] Comprobación tardía tras recibir el resultado
+                guard self.artworkFetchGeneration == generation else { return }
                 
-                let data = descriptor.data
-                
-                //Comprueba si esos datos pueden formar una imagen válida
                 if let image = NSImage(data: data) {
-                    DispatchQueue.main.async { self?.artwork = image }
+                    self.artwork = image
                 } else {
+                    // Fallback a iTunes Search API — pasa la misma generación
+                    self.fetchArtworkFromiTunes(
+                        title: self.songTitle,
+                        artist: self.artist,
+                        generation: generation
+                    )
+                }
+            }
+        }
+    }
+    
+    // MARK: - Artwork directo de Spotify vía AppleScript
+        private func fetchSpotifyArtwork(generation: UInt64) {
+            let script = """
+            tell application "System Events" to set isRunning to exists (processes where name is "Spotify")
+            if isRunning then
+                tell application "Spotify" to return artwork url of current track
+            end if
+            return ""
+            """
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                guard let self = self else { return }
+                guard self.artworkFetchGeneration == generation else { return }
+                
+                var error: NSDictionary?
+                guard let result = NSAppleScript(source: script)?.executeAndReturnError(&error).stringValue,
+                      !result.isEmpty,
+                      let url = URL(string: result) else {
+                    // Último recurso: iTunes Search API con álbum incluido
                     DispatchQueue.main.async {
-                        if let title = self?.songTitle, let artist = self?.artist {
-                            self?.fetchArtworkFromiTunes(title: title, artist: artist)
-                        }
+                        guard self.artworkFetchGeneration == generation else { return }
+                        self.fetchArtworkFromiTunes(
+                            title: self.songTitle,
+                            artist: self.artist,
+                            album: self.album,
+                            generation: generation
+                        )
                     }
+                    return
+                }
+                
+                DispatchQueue.main.async {
+                    guard self.artworkFetchGeneration == generation else { return }
+                    self.fetchArtwork(from: url, generation: generation)
                 }
             }
         }
     
-    private func fetchArtworkFromiTunes(title: String, artist: String) {
-        let term = "\(title) \(artist)".addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlStr = "https://itunes.apple.com/search?term=\(term)&limit=1&entity=song"
-        guard let url = URL(string: urlStr) else { return }
-        
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
-            guard let data = data,
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let results = json["results"] as? [[String: Any]],
-                  let first = results.first,
-                  let artUrlStr = first["artworkUrl100"] as? String else { return }
+    private func fetchArtworkFromiTunes(title: String, artist: String, album: String = "", generation: UInt64) {
+            // Incluimos el álbum en la query para que iTunes devuelva el match correcto
+            var searchParts = [title, artist]
+            if !album.isEmpty { searchParts.append(album) }
             
-            let highResUrlStr = artUrlStr.replacingOccurrences(of: "100x100bb", with: "600x600bb")
-            if let highResUrl = URL(string: highResUrlStr) { self?.fetchArtwork(from: highResUrl) }
-        }.resume()
-    }
+            let term = searchParts.joined(separator: " ")
+                .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+            let urlStr = "https://itunes.apple.com/search?term=\(term)&limit=1&entity=song"
+            guard let url = URL(string: urlStr) else { return }
+            
+            URLSession.shared.dataTask(with: url) { [weak self] data, _, _ in
+                guard let self = self else { return }
+                guard self.artworkFetchGeneration == generation else { return }
+                
+                guard let data = data,
+                      let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let results = json["results"] as? [[String: Any]],
+                      let first = results.first,
+                      let artUrlStr = first["artworkUrl100"] as? String else { return }
+                
+                let highResUrlStr = artUrlStr.replacingOccurrences(of: "100x100bb", with: "600x600bb")
+                if let highResUrl = URL(string: highResUrlStr) {
+                    self.fetchArtwork(from: highResUrl, generation: generation)
+                }
+            }.resume()
+        }
     
     // MARK: - Posición inicial
     private func fetchInitialState() {
@@ -253,6 +353,8 @@ class NowPlayingManager: NSObject, ObservableObject, NotchWidget {
         songTitle = ""; artist = ""; album = ""; artwork = nil
         isPlaying = false; elapsed = 0; duration = 0
         trackStartDate = nil; trackElapsedAtStart = 0; source = .none
+        currentTrackKey = ""
+        artworkFetchGeneration &+= 1  // Invalida cualquier fetch en vuelo al limpiar
     }
     
     func makeView() -> some View { NowPlayingView().environmentObject(self) }
