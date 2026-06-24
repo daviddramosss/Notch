@@ -26,12 +26,17 @@ class CameraManager: ObservableObject, NotchWidget {
     }
     
     func startSession() {
-        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        let status = PermissionsManager.shared.camera
         
-        if status == .authorized {
+        switch status {
+        case .granted:
             self.permissionGranted = true
             self.setupAndStart()
-        } else if status == .notDetermined {
+        case .denied:
+            self.permissionGranted = false
+        case .notDetermined:
+            // No debería llegar aquí si runStartupSequence() ya corrió,
+            // pero por defensividad pedimos
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 DispatchQueue.main.async {
                     self.permissionGranted = granted
@@ -40,7 +45,7 @@ class CameraManager: ObservableObject, NotchWidget {
             }
         }
     }
-    
+
     private func setupAndStart() {
         cameraQueue.async {
             // 1. Enchu cables SOLO si no se ha hecho antes

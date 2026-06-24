@@ -14,7 +14,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        print("🚀 APPDELEGATE ESTÁ VIVO")
         windowController = PanelWindowController(viewModel: panelViewModel)
         hoverDetector = HoverDetector(panel: windowController.panel, viewModel: panelViewModel)
         
@@ -35,10 +34,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = menu
         // ---------------------------------------
         
-        AutomationPermissionManager.shared.requestAllPermissions()
         
         Task {
-            await PermissionsManager.shared.requestAll()
+            await PermissionsManager.shared.runStartupSequence()
         }
         
         //Escucha si alguien pulsa el engranaje del Notch

@@ -45,15 +45,19 @@ class CalendarWidgetManager: ObservableObject, NotchWidget {
     // MARK: - Ciclo de vida
 
     func activate() {
-        requestAccessIfNeeded { [weak self] granted in
-            guard granted else {
-                self?.permissionDenied = true
-                return
-            }
-            self?.loadEvents()
-            // Refresca cada 5 minutos y al cambiar de minuto
-            self?.scheduleRefresh()
+        // Ya no pide permiso — consulta el estado centralizado
+        let status = PermissionsManager.shared.calendar
+        
+        if status == .denied {
+            permissionDenied = true
+            return
         }
+        
+        if status == .granted {
+            loadEvents()
+            scheduleRefresh()
+        }
+        // Si es .notDetermined, no hacemos nada — el startup sequence se encarga
     }
 
     func deactivate() {
@@ -62,28 +66,6 @@ class CalendarWidgetManager: ObservableObject, NotchWidget {
         events = []
     }
 
-    // MARK: - Permisos
-
-    private func requestAccessIfNeeded(completion: @escaping (Bool) -> Void) {
-        let status = EKEventStore.authorizationStatus(for: .event)
-        switch status {
-        case .authorized, .fullAccess:
-            completion(true)
-        case .notDetermined:
-            // iOS 17+ / macOS 14+ usa requestFullAccessToEvents
-            if #available(macOS 14.0, *) {
-                store.requestFullAccessToEvents { granted, _ in
-                    DispatchQueue.main.async { completion(granted) }
-                }
-            } else {
-                store.requestAccess(to: .event) { granted, _ in
-                    DispatchQueue.main.async { completion(granted) }
-                }
-            }
-        default:
-            completion(false)
-        }
-    }
 
     // MARK: - Carga de eventos
 
