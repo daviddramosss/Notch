@@ -30,13 +30,13 @@ directamente en la ceja del Mac:
 
 Si quieres profundizar en cómo he estructurado el código, separado las responsabilidades (MVVM) y gestionado la inyección de los módulos, puedes leer
 la documentación completa aquí:
-**[Ver Arquitectura del Proyecto](Docs/Architecture.md)**
+**[Ver Arquitectura del Proyecto](Notch/Docs/Architecture.md)**
 
 ##  Instalación y Uso
 
 Si quieres probar la aplicación en tu propio Mac (Requiere macOS 13+):
 
-1. Ve a la pestaña de [Releases](enlace_a_tus_releases_en_github) y descarga el último archivo `NotchPanel.app.zip`.
+1. Ve a la pestaña de [Releases](https://github.com/daviddramosss/Notch/releases) y descarga el último archivo `NotchPanel.app.zip`.
 2. Descomprímelo y arrastra la app a tu carpeta de **Aplicaciones**.
 3. **Importante:** Como es un proyecto Open Source no firmado mediante el programa de pago de Apple, la primera vez que la abras debes hacer **Clic Derecho > Abrir** (y confirmar la excepción de seguridad de macOS).
 4. Pasa el ratón por el Notch de tu cámara para desplegar el panel. Aparecerá un icono de un engranaje arriba a la derecha para acceder a los **Ajustes**.
