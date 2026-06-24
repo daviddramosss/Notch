@@ -48,7 +48,7 @@ class HoverDetector {
     }
 
     private func handleMouseEvent(_ event: NSEvent) {
-        guard let panel = panel, let _viewModel = viewModel else { return }
+        guard let panel = panel, let _ = viewModel else { return }
         
         let isInside = panel.frame.contains(NSEvent.mouseLocation)
         let mode = AppSettings.shared.activationMode

@@ -1,6 +1,7 @@
 /*
  Interfaz visual raíz. Dibuja el fondo, la cabecera (Pestañas y Ajustes)
  y distribuye el espacio interior de forma ELÁSTICA según los Ajustes.
+ PRUEBA   
 */
 
 import SwiftUI

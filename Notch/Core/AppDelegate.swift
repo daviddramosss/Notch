@@ -14,8 +14,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        print("🚀 APPDELEGATE ESTÁ VIVO")
         windowController = PanelWindowController(viewModel: panelViewModel)
         hoverDetector = HoverDetector(panel: windowController.panel, viewModel: panelViewModel)
+        
+        // --- SOLUCIÓN AL ICONO INVISIBLE ---
+        // 1. Creo el espacio en la barra de menú
+        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        
+        // 2. Le pongo un icono (puedes cambiar "menubar.rectangle" por "gearshape.fill" si prefieres)
+        if let button = statusItem?.button {
+            button.image = NSImage(systemSymbolName: "menubar.rectangle", accessibilityDescription: "Notch")
+        }
+        
+        // 3. Le añado un menú desplegable para controlarlo
+        let menu = NSMenu()
+        menu.addItem(NSMenuItem(title: "Ajustes...", action: #selector(openSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Cerrar Notch", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        statusItem?.menu = menu
+        // ---------------------------------------
         
         AutomationPermissionManager.shared.requestAllPermissions()
         
