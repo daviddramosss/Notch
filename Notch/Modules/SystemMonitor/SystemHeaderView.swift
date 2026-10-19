@@ -9,6 +9,7 @@ struct SystemHeaderView: View {
     
     var body: some View {
         HStack(spacing: 14) {
+            // MARK: - Periféricos
             if settings.systemShowAirPods && btManager.airpods.isConnected {
                 Image(systemName: "airpods")
                     .font(.system(size: 14))
@@ -16,6 +17,7 @@ struct SystemHeaderView: View {
                     .transition(.scale.combined(with: .opacity))
             }
             
+            // MARK: - Medidores de Sistema
             if settings.systemShowCPU {
                 MiniGauge(title: "CPU", value: sysManager.stats.cpuUsage)
                     .transition(.scale.combined(with: .opacity))

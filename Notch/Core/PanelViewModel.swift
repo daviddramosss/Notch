@@ -9,6 +9,7 @@ import Combine
 class PanelViewModel: ObservableObject {
     
     @Published var isExpanded: Bool = false
+    @Published var isMenuOrPopoverOpen: Bool = false
     
     var collapsedHeight: CGFloat = 32
     var collapsedWidth: CGFloat = 200

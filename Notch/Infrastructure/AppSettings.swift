@@ -100,7 +100,28 @@ class AppSettings: ObservableObject {
     @AppStorage("sys_show_airpods") var systemShowAirPods: Bool = true
     
     // --------------------------------------------------------
-    // 6. GENERALES
+    // 6. APPS ANCLADAS (QUICK LAUNCH)
+    @AppStorage("pinned_apps_raw") private var pinnedAppsRaw: String = ""
+    
+    var pinnedApps: [PinnedApp] {
+        get {
+            guard !pinnedAppsRaw.isEmpty,
+                  let data = pinnedAppsRaw.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode([PinnedApp].self, from: data) else {
+                return PinnedApp.defaultApps
+            }
+            return decoded
+        }
+        set {
+            if let encoded = try? JSONEncoder().encode(newValue),
+               let str = String(data: encoded, encoding: .utf8) {
+                pinnedAppsRaw = str
+            }
+        }
+    }
+    
+    // --------------------------------------------------------
+    // 7. GENERALES
     @AppStorage("launch_at_login") var launchAtLogin: Bool = false
     @AppStorage("show_menu_bar_icon") var showMenuBarIcon: Bool = true
     @AppStorage("useMaterialBackground") var useMaterialBackground: Bool = true

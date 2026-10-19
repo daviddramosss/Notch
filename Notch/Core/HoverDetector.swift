@@ -47,10 +47,38 @@ class HoverDetector {
         }
     }
 
-    private func handleMouseEvent(_ event: NSEvent) {
-        guard let panel = panel, let _ = viewModel else { return }
+    private func isMouseInside() -> Bool {
+        guard let panel = panel else { return false }
+        let mouseLoc = NSEvent.mouseLocation
         
-        let isInside = panel.frame.contains(NSEvent.mouseLocation)
+        // 1. Dentro del panel principal
+        if panel.frame.contains(mouseLoc) {
+            return true
+        }
+        
+        // 2. Si el ratón está sobre cualquier ventana secundaria o Popover abierto
+        for window in NSApp.windows where window.isVisible && window != panel {
+            if window.title == "Ajustes de Notch" { continue }
+            let className = String(describing: type(of: window))
+            if className.contains("Popover") || window.parent == panel {
+                if window.frame.contains(mouseLoc) {
+                    return true
+                }
+            }
+        }
+        
+        return false
+    }
+
+    private func handleMouseEvent(_ event: NSEvent) {
+        guard let panel = panel, let viewModel = viewModel else { return }
+        
+        // Si hay un menú o popover desplegado, proteger el Notch de cualquier auto-cierre
+        if viewModel.isMenuOrPopoverOpen {
+            return
+        }
+        
+        let isInside = isMouseInside()
         let mode = AppSettings.shared.activationMode
         
         // LÓGICA DE CLICS

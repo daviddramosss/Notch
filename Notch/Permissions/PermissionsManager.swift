@@ -37,12 +37,21 @@ class PermissionsManager: ObservableObject {
     // MARK: - Punto de entrada único (llamar desde AppDelegate)
     
     /// Ejecuta comprobaciones y peticiones en secuencia estricta.
-    /// Nunca dos popups simultáneos. Solo pide si el estado es .notDetermined.
+    /// Nunca dos popups simultáneos. Se solicitan una única vez; después, solo lectura silenciosa.
     func runStartupSequence() async {
-        // 1. Lectura limpia del estado actual
+        // 1. Lectura limpia del estado actual sin popups
         refreshStatuses()
         
-        // 2. Pedir permisos TCC solo si no se han determinado, uno a uno
+        let promptedKey = "has_completed_initial_permissions_sequence"
+        let alreadyPrompted = UserDefaults.standard.bool(forKey: promptedKey)
+        
+        if alreadyPrompted {
+            // Ya se solicitó en el primer inicio. NUNCA volver a molestar con popups automáticos.
+            initialCheckComplete = true
+            return
+        }
+        
+        // 2. Pedir permisos TCC por primera vez solo si no se han determinado, uno a uno
         if calendar == .notDetermined {
             await requestCalendar()
         }
@@ -54,7 +63,10 @@ class PermissionsManager: ObservableObject {
         // 3. Automation (Apple Events) — con pre-check sin popup
         await requestAutomationIfNeeded()
         
-        // 4. Lectura final para reflejar cualquier cambio
+        // 4. Marcar como completado para que nunca más se repita
+        UserDefaults.standard.set(true, forKey: promptedKey)
+        
+        // 5. Lectura final para reflejar cualquier cambio
         refreshStatuses()
         initialCheckComplete = true
     }

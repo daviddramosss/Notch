@@ -1,5 +1,7 @@
 import SwiftUI
 import ServiceManagement
+import UniformTypeIdentifiers
+import AppKit
 
 struct SettingsView: View {
     @EnvironmentObject var registry: WidgetRegistry
@@ -158,7 +160,7 @@ struct NookSettingsSection: View {
             Divider()
             
             VStack(alignment: .leading, spacing: 10) {
-                Label("Cabecera del Sistema (Arriba a la derecha)", systemImage: "menubar.dock.rectangle.badge.record")
+                Label("Cabecera del Sistema", systemImage: "menubar.dock.rectangle.badge.record")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.secondary)
                 
@@ -173,7 +175,155 @@ struct NookSettingsSection: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(NSColor.separatorColor), lineWidth: 0.5))
             }
+            
+            Divider()
+            
+            // MARK: - Apps Ancladas (Acceso Rápido)
+            PinnedAppsSettingsSection()
         }
+    }
+}
+
+// MARK: - SECCIÓN DE APPS ANCLADAS (AJUSTES)
+struct PinnedAppsSettingsSection: View {
+    @ObservedObject var manager = PinnedAppsManager.shared
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Label("Apps Ancladas (\(manager.enabledCount)/2 activas)", systemImage: "dock.rectangle")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                Button(action: selectApp) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("Añadir App...")
+                            .font(.system(size: 11, weight: .medium))
+                    }
+                    .foregroundColor(.accentColor)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                }
+                .buttonStyle(.plain)
+                .onHover { hovering in
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
+            }
+            
+            VStack(spacing: 0) {
+                if manager.apps.isEmpty {
+                    Text("No hay apps ancladas")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                        .padding(.vertical, 16)
+                        .frame(maxWidth: .infinity)
+                } else {
+                    ForEach(Array(manager.apps.enumerated()), id: \.element.id) { index, app in
+                        PinnedAppRow(app: app, manager: manager)
+                        if index < manager.apps.count - 1 {
+                            Divider().padding(.leading, 48)
+                        }
+                    }
+                }
+            }
+            .background(Color(NSColor.controlBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(NSColor.separatorColor), lineWidth: 0.5))
+            
+            Text("Máximo de 2 apps activas")
+                .font(.system(size: 11))
+                .foregroundColor(.secondary.opacity(0.8))
+                .padding(.leading, 2)
+        }
+    }
+    
+    private func selectApp() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = "Añadir"
+        panel.message = "Selecciona una aplicación para anclar a la cabecera"
+        
+        if panel.runModal() == .OK, let url = panel.url {
+            manager.addApp(url: url)
+        }
+    }
+}
+
+struct PinnedAppRow: View {
+    let app: PinnedApp
+    @ObservedObject var manager: PinnedAppsManager
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Group {
+                if manager.isInstalled(app) {
+                    Image(nsImage: manager.icon(for: app))
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                        .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+                } else if let symbol = app.customIconSymbol {
+                    Image(systemName: symbol)
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .frame(width: 24, height: 24)
+                } else {
+                    Image(nsImage: manager.icon(for: app))
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                }
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(app.name)
+                        .font(.system(size: 13, weight: .medium))
+                    if !manager.isInstalled(app) {
+                        Text("No instalada")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(.orange)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(Color.orange.opacity(0.15))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            Button {
+                manager.removeApp(id: app.id)
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary.opacity(0.7))
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 6)
+            .help("Eliminar de la lista")
+            
+            Toggle("", isOn: Binding(
+                get: { app.isEnabled },
+                set: { _ in manager.toggleApp(id: app.id) }
+            ))
+            .disabled(!app.isEnabled && manager.enabledCount >= 2)
+            .labelsHidden()
+            .toggleStyle(.switch)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
     }
 }
 

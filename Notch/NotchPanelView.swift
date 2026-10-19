@@ -123,13 +123,18 @@ struct NotchPanelView: View {
     
     private var header: some View {
         HStack {
-            HStack(spacing: 8) {
-                TabButton(title: "Nook", icon: "macwindow", isSelected: selectedTab == .nook) {
-                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .nook }
+            HStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    TabButton(title: "Nook", icon: "macwindow", isSelected: selectedTab == .nook) {
+                        withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .nook }
+                    }
+                    TabButton(title: "Tray", icon: "tray", isSelected: selectedTab == .tray) {
+                        withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .tray }
+                    }
                 }
-                TabButton(title: "Tray", icon: "tray", isSelected: selectedTab == .tray) {
-                    withAnimation(.easeInOut(duration: 0.2)) { selectedTab = .tray }
-                }
+                
+                // Apps ancladas ubicadas en el ala izquierda (no chocan con el notch)
+                PinnedAppsHeaderView()
             }
             Spacer()
             

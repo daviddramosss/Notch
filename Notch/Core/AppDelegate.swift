@@ -14,6 +14,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Garantizar instancia única: terminar cualquier proceso previo o zombi de Notch
+        terminateOtherInstances()
+        
         windowController = PanelWindowController(viewModel: panelViewModel)
         hoverDetector = HoverDetector(panel: windowController.panel, viewModel: panelViewModel)
         
@@ -74,5 +77,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-   
+    // Termina cualquier instancia previa huérfana de Notch para evitar procesos duplicados
+    private func terminateOtherInstances() {
+        let currentPID = ProcessInfo.processInfo.processIdentifier
+        let bundleID = Bundle.main.bundleIdentifier ?? ""
+        guard !bundleID.isEmpty else { return }
+        
+        let runningApps = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+        for app in runningApps where app.processIdentifier != currentPID {
+            app.terminate()
+        }
+    }
 }
