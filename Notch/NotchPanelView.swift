@@ -58,6 +58,7 @@ struct NotchPanelView: View {
             header
                 .padding(.horizontal, 22)
                 .padding(.top, 12)
+               
             
             if selectedTab == .nook {
                 let activeNookWidgets = registry.orderedWidgets.filter {

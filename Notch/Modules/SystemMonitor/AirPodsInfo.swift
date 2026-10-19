@@ -1,3 +1,5 @@
+// AirPodsInfo.swift
+
 import Foundation
 
 struct AirPodsInfo {
@@ -6,4 +8,8 @@ struct AirPodsInfo {
     var rightBattery: Int?
     var caseBattery: Int?
     var isConnected: Bool = false
+    
+    var hasAnyBatteryData: Bool {
+        leftBattery != nil || rightBattery != nil || caseBattery != nil
+    }
 }

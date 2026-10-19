@@ -1,6 +1,6 @@
 # NotchPanel
 
-## Sobre el proyecto  a
+## Sobre el proyecto 
 
 He desarrollado NotchPanel como un reto técnico personal para mi portfolio. El objetivo era construir un clon funcional de utilidades como *Notch
 Nook*, superando la gran limitación del framework moderno de Apple
@@ -12,13 +12,13 @@ las animaciones de la interfaz.
 ## Características Principales
 
 He implementado un sistema de arquitectura modular ("Plug & Play") que me ha permitido inyectar las siguientes herramientas de productividad
-directamente en la ceja del Mac:
+directamente en la ceja del Mac:*
 
-* **🎵 Control Multimedia Avanzado:** Integración directa con Spotify y Apple Music saltando las restricciones de Sandbox mediante el framework privado `MediaRemote` (C-API) y `NSAppleScript`.
-* **📁 Bandeja DropZone:** Un espacio de almacenamiento temporal (`NSItemProvider`) basado en Drag & Drop para guardar archivos y enlaces.
-* **📅 Calendario Nativo:** Lectura en tiempo real de los eventos del día solicitando acceso seguro a `EventKit`.
-* **📸 Espejo (Cámara):** Feed de video en vivo inyectando un `AVCaptureVideoPreviewLayer` dentro del entorno de SwiftUI.
-* **📊 Monitor del Sistema:** Lectura de bajo nivel del kernel (Mach/Darwin) para mostrar el uso real de CPU y RAM, junto con el estado de batería de dispositivos Bluetooth conectados.
+- **Ctrol Multimedia Avanzado:** Integración directa con Spotify y Apple Music saltando las restricciones de Sandbox mediante el framework privado `MediaRemote` (C-API) y `NSAppleScript`.
+* ***Bandeja DropZone:*** Un espacio de almacenamiento temporal (`NSItemProvider`) basado en Drag & Drop para guardar archivos y enlaces.
+* ***Calendario Nativo:*** Lectura en tiempo real de los eventos del día solicitando acceso seguro a `EventKit`.
+* ***Espejo (Cámara)**: *Feed de video en vivo inyectando un `AVCaptureVideoPreviewLayer` dentro del entorno de SwiftUI.
+* ***Monitor del Sistema:*** Lectura de bajo nivel del kernel (Mach/Darwin) para mostrar el uso real de CPU y RAM, junto con el estado de batería de dispositivos Bluetooth conectados.
 
 ## 🛠️ Stack Tecnológico y Retos Superados
 
