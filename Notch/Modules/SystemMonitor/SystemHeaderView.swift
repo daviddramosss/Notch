@@ -5,13 +5,16 @@ import SwiftUI
 struct SystemHeaderView: View {
     @StateObject private var sysManager = SystemMonitorManager()
     @StateObject private var btManager = BluetoothManager()
-    
     @ObservedObject private var settings = AppSettings.shared
     
-    @State private var isAirPodsDropdownOpen: Bool = false
-    
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 14) {
+            if settings.systemShowAirPods && btManager.airpods.isConnected {
+                Image(systemName: "airpods")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.85))
+                    .transition(.scale.combined(with: .opacity))
+            }
             
             if settings.systemShowCPU {
                 MiniGauge(title: "CPU", value: sysManager.stats.cpuUsage)
@@ -22,42 +25,11 @@ struct SystemHeaderView: View {
                 MiniGauge(title: "RAM", value: sysManager.stats.ramPercent)
                     .transition(.scale.combined(with: .opacity))
             }
-            
-            if settings.systemShowAirPods && btManager.airpods.isConnected {
-                Image(systemName: "airpods")
-                    .font(.system(size: 15))
-                    .foregroundColor(.white.opacity(isAirPodsDropdownOpen ? 1.0 : 0.8))
-                    .transition(.scale.combined(with: .opacity))
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        btManager.startBatteryUpdates()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                            if btManager.airpods.hasAnyBatteryData {
-                                isAirPodsDropdownOpen = true
-                            } else {
-                                // Hardware no soporta reporte de batería — no abrimos nada
-                                btManager.stopBatteryUpdates()
-                            }
-                        }
-                    }
-                    .onHover { hovering in
-                        if hovering { NSCursor.pointingHand.push() }
-                        else { NSCursor.pop() }
-                    }
-                    .popover(isPresented: $isAirPodsDropdownOpen,
-                             attachmentAnchor: .point(.bottom),
-                             arrowEdge: .top) {
-                        AirPodsBatteryDropdown(info: btManager.airpods)
-                            .onAppear { btManager.startBatteryUpdates() }
-                            .onDisappear { btManager.stopBatteryUpdates() }
-                    }
-            }
         }
-
         .animation(.easeInOut(duration: 0.3), value: btManager.airpods.isConnected)
+        .animation(.easeInOut(duration: 0.3), value: settings.systemShowAirPods)
         .animation(.easeInOut(duration: 0.3), value: settings.systemShowCPU)
         .animation(.easeInOut(duration: 0.3), value: settings.systemShowRAM)
-        .animation(.easeInOut(duration: 0.3), value: settings.systemShowAirPods)
         .onAppear {
             sysManager.startMonitoring()
             btManager.startMonitoring()
@@ -65,13 +37,6 @@ struct SystemHeaderView: View {
         .onDisappear {
             sysManager.stopMonitoring()
             btManager.stopMonitoring()
-            isAirPodsDropdownOpen = false
-        }
-
-        .onChange(of: btManager.airpods.isConnected) { _, isConnected in
-            if !isConnected && isAirPodsDropdownOpen {
-                withAnimation { isAirPodsDropdownOpen = false }
-            }
         }
     }
 }

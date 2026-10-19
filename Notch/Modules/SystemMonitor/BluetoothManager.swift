@@ -3,8 +3,6 @@
 import Foundation
 import Combine
 import IOBluetooth
-private var pollTimer: Timer?
-private var batteryTimer: Timer?
 
 class BluetoothManager: NSObject, ObservableObject {
     static let shared = BluetoothManager()
