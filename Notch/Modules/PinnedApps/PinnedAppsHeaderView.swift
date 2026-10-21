@@ -38,7 +38,7 @@ struct PinnedAppButton: View {
     @EnvironmentObject var viewModel: PanelViewModel
     @State private var isHovered: Bool = false
     @State private var showActionsPopover: Bool = false
-    
+     
     var body: some View {
         Button {
             manager.launchApp(app)

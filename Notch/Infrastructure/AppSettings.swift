@@ -1,28 +1,14 @@
-/*
- 
- AppSettings es la memoria a largo plazo de la aplicación.
-
- Si no tuviéramos este archivo, cada vez que se cierra la aplicación y se volviera a abrir, el Mac olvidaría cómo estaba
- configurado el notch. Si habías decidido apagar la cámara y poner el panel a 400 píxeles de ancho, al reiniciar volvería a estar
- la cámara encendida y el panel a 320 píxeles.
-
- AppSettings soluciona esto usando una herramienta mágica de Apple llamada @AppStorage.
-
- @AppStorage guarda automáticamente cualquier variable directamente en el disco duro de tu Mac (en un archivo del
- sistema llamado UserDefaults). No hay que darle a "Guardar", se hace solo en tiempo real.
-
- */
+// AppSettings.swift
+// Persistencia de configuración de usuario en UserDefaults vía @AppStorage.
 
 import SwiftUI
 import Combine
 
-// MARK: - CLASE PRINCIPAL DE AJUSTES
 class AppSettings: ObservableObject {
     static let shared = AppSettings()
     
     // --------------------------------------------------------
-    // 1. ESTADO Y ORDEN DE LOS WIDGETS (Sincronizado Enum)
-    // Por defecto: Música, Calendario y Cámara (Espejo)
+    // 1. ESTADO Y ORDEN DE LOS WIDGETS
     @AppStorage("enabled_widgets_raw") private var enabledWidgetsRaw: String = "[\"now_playing\", \"calendar\", \"camera\"]"
     
     var enabledWidgets: [WidgetID] {
@@ -87,7 +73,7 @@ class AppSettings: ObservableObject {
     @AppStorage("activation_mode") var activationMode: ActivationMode = .hover
     
     // --------------------------------------------------------
-    // 5. OPCIONES ESPECÍFICAS DE CADA MÓDULO
+    // 5. OPCIONES DE MÓDULOS
     @AppStorage("np_show_artwork") var nowPlayingShowArtwork: Bool = true
     @AppStorage("np_show_progress") var nowPlayingShowProgress: Bool = true
     @AppStorage("np_show_controls") var nowPlayingShowControls: Bool = true
@@ -100,7 +86,7 @@ class AppSettings: ObservableObject {
     @AppStorage("sys_show_airpods") var systemShowAirPods: Bool = true
     
     // --------------------------------------------------------
-    // 6. APPS ANCLADAS (QUICK LAUNCH)
+    // 6. APPS ANCLADAS (ACCESO RÁPIDO)
     @AppStorage("pinned_apps_raw") private var pinnedAppsRaw: String = ""
     
     var pinnedApps: [PinnedApp] {
@@ -144,7 +130,6 @@ enum AccentColorOption: String, CaseIterable, Codable {
 }
 
 // MARK: - EXTENSIÓN VISUAL
-// Uso de los cases tal cual definidos en Enum
 extension WidgetID {
     var displayName: String {
         switch self {

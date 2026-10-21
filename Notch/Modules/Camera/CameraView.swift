@@ -1,8 +1,5 @@
-/*
- Dibuja el botón circular "Mirror".
- Usa un NSView personalizado con "layout()" para obligar al vídeo
- a rellenar el círculo y evitar la pantalla negra.
-*/
+// CameraView.swift
+// Vista del módulo de cámara: botón circular de previsualización en vivo (Mirror).
 
 import SwiftUI
 import AVFoundation
@@ -28,14 +25,12 @@ struct CameraView: View {
                 
                 CameraPreviewView(session: manager.session, isRunning: manager.isRunning)
                     .clipShape(Circle())
-                    // Si apaga el botón, la hace invisible
                     .opacity((isMirrorActive && manager.isRunning) ? 1 : 0)
                 
-                // Textos e icono por encima cuando está apagado
                 if !isMirrorActive || !manager.isRunning {
                     VStack(spacing: 4) {
                         Image(systemName: "video.fill")
-                            .font(.system(size: 26)) //hago la camara un poco mas grande
+                            .font(.system(size: 26))
                         Text("Mirror")
                             .font(.system(size: 12, weight: .medium))
                     }
@@ -48,7 +43,7 @@ struct CameraView: View {
     }
 }
 
-// MARK: - El Puente Nativo
+// MARK: - Previsualización Nativa AVFoundation
 class VideoPreviewNSView: NSView {
     var previewLayer: AVCaptureVideoPreviewLayer
     
@@ -79,14 +74,13 @@ class VideoPreviewNSView: NSView {
 
 struct CameraPreviewView: NSViewRepresentable {
     let session: AVCaptureSession
-    let isRunning: Bool // SwiftUI vigilará esta variable
+    let isRunning: Bool
     
     func makeNSView(context: Context) -> VideoPreviewNSView {
         return VideoPreviewNSView(session: session)
     }
     
     func updateNSView(_ nsView: VideoPreviewNSView, context: Context) {
-        // Cuando el motor confirme que está encendido, aplicamos el espejo
         if isRunning {
             nsView.applyMirrorEffect()
         }

@@ -1,9 +1,5 @@
-/*
- EXPLICACIÓN DE LA CLASE:
- Es el "Conductor" físico. Habla con AppKit para mover y cambiar el tamaño de la ventana.
- Gestiona el redondeo directamente en el CALayer de la ventana (CoreAnimation)
- aplicando una curva continua (.continuous) para el efecto squircle orgánico.
- */
+// PanelWindowController.swift
+// Controla el ciclo de vida, geometría y animaciones del NSPanel.
 
 import AppKit
 import SwiftUI
@@ -44,7 +40,6 @@ class PanelWindowController {
         let hostingView = NSHostingView(rootView: rootView)
         panel.contentView = hostingView
         
-        // Se enmascara el panel directamente para que la curva no se corte
         hostingView.wantsLayer = true
         hostingView.layer?.masksToBounds = true
         hostingView.layer?.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
@@ -96,14 +91,12 @@ class PanelWindowController {
         guard let screen = NSScreen.main else { return }
             
         let targetFrame = expand ? expandedFrame(for: screen) : notchFrame(for: screen)
-        
-        // CURVAS DINÁMICAS: Ahora la ventana física lee el redondeo de los Ajustes
         let targetRadius: CGFloat = expand ? CGFloat(AppSettings.shared.cornerRadius) : 12
             
         NSAnimationContext.runAnimationGroup { context in
             context.duration = 0.3
             context.timingFunction = CAMediaTimingFunction(controlPoints: 0.34, 1.56, 0.64, 1.0)
-            context.allowsImplicitAnimation = true // Permite que CALayer se anime solo
+            context.allowsImplicitAnimation = true
             
             panel.animator().setFrame(targetFrame, display: true)
             panel.contentView?.layer?.cornerRadius = targetRadius

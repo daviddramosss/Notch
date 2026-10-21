@@ -1,14 +1,10 @@
-/*
- 
- Este archivo usa comandos (lenguaje C) para leer el procesador y la memoria sin gastar apenas batería.
- 
- */
-
+// SystemMonitorManager.swift
+// Monitoriza uso de CPU y memoria RAM mediante llamadas nativas Darwin/Mach del kernel.
 
 import Foundation
 import Combine
 import SwiftUI
-import Darwin // Necesario para hablar en el idioma base del procesador (mach)
+import Darwin
 
 class SystemMonitorManager: ObservableObject {
     
@@ -17,16 +13,12 @@ class SystemMonitorManager: ObservableObject {
     private var timer: Timer?
     private let hostCPU = mach_host_self()
     
-    // Variables para calcular la CPU (necesita comparar el instante anterior con el actual)
     private var previousCPUInfo: processor_info_array_t?
     private var previousCPUInfoCount: mach_msg_type_number_t = 0
     
-    // Arranca el motor: lee los datos cada 2 segundos
     func startMonitoring() {
-        // Primera lectura inmediata
         updateStats()
         
-        // Configura el reloj
         timer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.updateStats()
         }
@@ -36,7 +28,6 @@ class SystemMonitorManager: ObservableObject {
         timer?.invalidate()
         timer = nil
         
-        // Limpia la memoria para evitar fugas (Memory Leaks)
         if let prevInfo = previousCPUInfo {
             let prevCpuInfoSize = Int(previousCPUInfoCount) * MemoryLayout<integer_t>.stride
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: prevInfo), vm_size_t(prevCpuInfoSize))
@@ -45,12 +36,10 @@ class SystemMonitorManager: ObservableObject {
     }
     
     private func updateStats() {
-        // Lo ejecutamos en un hilo secundario para no congelar la app
         DispatchQueue.global(qos: .utility).async {
             let newCpu = self.fetchCPUUsage()
             let newRam = self.fetchRAMStats()
             
-            // Volvemos al hilo principal para actualizar la pantalla
             DispatchQueue.main.async {
                 self.stats.cpuUsage = newCpu
                 self.stats.ramUsed = newRam.ramUsed
@@ -59,7 +48,7 @@ class SystemMonitorManager: ObservableObject {
         }
     }
     
-    // MARK: - Lector de CPU
+    // MARK: - Métrica de CPU
     private func fetchCPUUsage() -> Double {
         var numCPUs: natural_t = 0
         var cpuInfo: processor_info_array_t?
@@ -96,29 +85,27 @@ class SystemMonitorManager: ObservableObject {
                 totalUsage = Double(totalUser + totalSystem + totalNice) / Double(total)
             }
             
-            // Limpia la memoria de la lectura anterior
             let prevCpuInfoSize = Int(previousCPUInfoCount) * MemoryLayout<integer_t>.stride
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: prevCPUInfo), vm_size_t(prevCpuInfoSize))
         }
         
-        // Guarda la lectura actual para la próxima comparación
         previousCPUInfo = cpuInfo
         previousCPUInfoCount = numCPUInfo
         
         return min(totalUsage, 1.0)
     }
     
-    // MARK: - Lector de RAM
+    // MARK: - Métrica de Memoria RAM
     private func fetchRAMStats() -> SystemStats {
         var stats = SystemStats()
         
-        // 1. Obtener RAM Total
+        // RAM Total
         var memSize: UInt64 = 0
         var size = MemoryLayout<UInt64>.size
         sysctlbyname("hw.memsize", &memSize, &size, nil, 0)
-        stats.ramTotal = Double(memSize) / 1_073_741_824.0 // Convertimos Bytes a GB
+        stats.ramTotal = Double(memSize) / 1_073_741_824.0
         
-        // 2. Obtener RAM Usada
+        // RAM Usada
         var vmStats = vm_statistics64()
         var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64_data_t>.size / MemoryLayout<integer_t>.size)
         

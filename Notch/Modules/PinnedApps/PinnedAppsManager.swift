@@ -38,7 +38,6 @@ class PinnedAppsManager: ObservableObject {
     
     func launchApp(_ app: PinnedApp) {
         guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleIdentifier) else {
-            print("⚠️ No se encontró la aplicación instalada con Bundle ID: \(app.bundleIdentifier)")
             return
         }
         
@@ -46,9 +45,7 @@ class PinnedAppsManager: ObservableObject {
         config.activates = true
         
         NSWorkspace.shared.openApplication(at: url, configuration: config) { [weak self] _, error in
-            if let error = error {
-                print("❌ Error abriendo \(app.name): \(error.localizedDescription)")
-            } else {
+            if error == nil {
                 Task { @MainActor in
                     self?.updateRunningStatus()
                 }

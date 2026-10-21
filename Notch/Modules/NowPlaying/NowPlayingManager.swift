@@ -1,10 +1,7 @@
 
-/*
- 
- Es el cerebro del widget. Coge los datos que le da el puente, los formatea, crea los temporizadores y le dice a la vista qué tiene que
- dibujar.
- 
- */
+// NowPlayingManager.swift
+// Gestiona el estado de reproducción multimedia, metadatos y carátulas.
+
 import AppKit
 import Combine
 import SwiftUI

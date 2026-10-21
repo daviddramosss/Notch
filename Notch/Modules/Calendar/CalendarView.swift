@@ -1,8 +1,5 @@
-/*
- Dibuja la interfaz del calendario de forma ELÁSTICA y CENTRADA.
- Usa GeometryReader para calcular cuánto espacio tiene y,
- automáticamente, muestra el mes completo o abreviado, y más o menos días.
-*/
+// CalendarView.swift
+// Vista del widget de Calendario: cabecera semanal y eventos próximos.
 
 import SwiftUI
 
@@ -11,8 +8,7 @@ struct CalendarView: View {
     
     var body: some View {
         GeometryReader { geo in
-            VStack(alignment: .center, spacing: 6) { // Reducido para mayor compactación
-                
+            VStack(alignment: .center, spacing: 6) {
                 weekDaysHeader(availableWidth: geo.size.width)
                 
                 VStack(alignment: .center, spacing: 2) {
@@ -95,7 +91,7 @@ struct CalendarView: View {
                 HStack(spacing: 8) {
                     RoundedRectangle(cornerRadius: 2)
                         .fill(event.color)
-                        .frame(width: 3, height: 16) // Más cortito para que no desborde
+                        .frame(width: 3, height: 16)
                     
                     VStack(alignment: .leading, spacing: 0) {
                         Text(event.title)

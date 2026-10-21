@@ -28,4 +28,5 @@ protocol NotchWidget: ObservableObject {
     // La vista visual que se inyectará en el Notch
     associatedtype WidgetView: View
     func makeView() -> WidgetView
+    
 }

@@ -550,14 +550,11 @@ struct CalendarOptions: View {
 }
 
 struct GeneralSettingsSection: View {
-    // Leemos el estado real del sistema al abrir la pestaña
     @State private var isLaunchAtLoginEnabled: Bool = SMAppService.mainApp.status == .enabled
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsCard(title: "Inicio", icon: "power") {
-                
-                // Creamos un Binding (Conexión directa) entre el interruptor y el sistema del Mac
                 SettingsToggleRow(
                     label: "Iniciar con Mac",
                     icon: "bolt.fill",
@@ -572,21 +569,17 @@ struct GeneralSettingsSection: View {
         }
     }
     
-    // MARK: - Lógica del Sistema
+    // MARK: - Gestión de Inicio de Sesión
     private func toggleLaunchAtLogin(enable: Bool) {
         do {
             if enable {
-                //Pide a macOS que añada a la lista
                 try SMAppService.mainApp.register()
             } else {
-                //Pide a macOS que quite de la lista
                 try SMAppService.mainApp.unregister()
             }
-            // Si funciona, actualiza el interruptor visualmente
             isLaunchAtLoginEnabled = enable
         } catch {
             print("Error al configurar el arranque del sistema: \(error.localizedDescription)")
-            // Si el sistema lo rechaza por seguridad, el interruptor vuelve a su estado real
             isLaunchAtLoginEnabled = SMAppService.mainApp.status == .enabled
         }
     }
@@ -598,8 +591,6 @@ struct BehaviorSettingsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             SettingsCard(title: "Activación", icon: "cursorarrow") {
-                
-                // 1. Selector de Modo
                 Picker("Activar con", selection: $settings.activationMode) {
                     Text("Hover").tag(ActivationMode.hover)
                     Text("Clic").tag(ActivationMode.click)
@@ -608,14 +599,13 @@ struct BehaviorSettingsSection: View {
                 .pickerStyle(.segmented)
                 .padding(14)
                 
-                // 2. Deslizador de retraso (Aparece solo en modo Hover)
                 if settings.activationMode == .hover {
                     Divider().padding(.leading, 36)
                     SettingsSliderRow(
                         label: "Retraso al abrir",
                         icon: "timer",
                         value: $settings.hoverExpandDelay,
-                        range: 0.0...1.5, // De 0 a 1.5 segundos
+                        range: 0.0...1.5,
                         step: 0.1,
                         unit: "s"
                     )
@@ -630,8 +620,6 @@ struct AppearanceSettingsSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            
-            // 1. Tarjeta principal de ajustes
             SettingsCard(title: "Panel", icon: "rectangle.roundedtop") {
                 SettingsToggleRow(label: "Fondo Translúcido", icon: "drop.fill", isOn: $settings.useMaterialBackground)
                 Divider().padding(.leading, 36)
@@ -642,9 +630,8 @@ struct AppearanceSettingsSection: View {
                 SettingsSliderRow(label: "Redondeo de bordes", icon: "square.on.circle", value: $settings.cornerRadius, range: 0...60, step: 2, unit: "px")
             }
             
-            // 2. Botón de Restablecer
             HStack {
-                Spacer() // Empuja el botón hacia la derecha
+                Spacer()
                 
                 Button(action: resetAppearanceDefaults) {
                     HStack(spacing: 6) {
@@ -673,7 +660,6 @@ struct AppearanceSettingsSection: View {
     
     // MARK: - Valores por defecto
     private func resetAppearanceDefaults() {
-        // Envolvemos los cambios en withAnimation para que los sliders se muevan suavemente
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             settings.useMaterialBackground = true
             settings.expandedHeight = 165.0 

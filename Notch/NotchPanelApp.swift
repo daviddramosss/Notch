@@ -1,6 +1,8 @@
+// NotchPanelApp.swift
+// Punto de entrada de la aplicación. Delega el ciclo de vida y gestión de ventanas a AppDelegate.
+
 import SwiftUI
 
-//Esto elimina la ventana en blanco de raíz. El AppDelegate es ahora el único responsable de crear ventanas.
 @main
 struct NotchPanelApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate

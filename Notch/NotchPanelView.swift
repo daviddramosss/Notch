@@ -1,8 +1,5 @@
-/*
- Interfaz visual raíz. Dibuja el fondo, la cabecera (Pestañas y Ajustes)
- y distribuye el espacio interior de forma ELÁSTICA según los Ajustes.
- PRUEBA   
-*/
+// NotchPanelView.swift
+// Vista principal en SwiftUI: renderiza la ventana, cabecera de navegación y distribución de widgets.
 
 import SwiftUI
 
@@ -20,23 +17,22 @@ struct NotchPanelView: View {
     
     var body: some View {
         ZStack(alignment: .top) {
-            //Cristal oscuro o Negro sólido
-                Group {
-                    if settings.useMaterialBackground {
-                        Rectangle()
-                            .fill(.ultraThinMaterial)
-                            .environment(\.colorScheme, .dark) // Fuerza el tinte oscuro elegante
-                    } else {
-                        Color.black
-                    }
+            Group {
+                if settings.useMaterialBackground {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .environment(\.colorScheme, .dark)
+                } else {
+                    Color.black
                 }
-                .clipShape(
-                    .rect(
-                        bottomLeadingRadius: viewModel.isExpanded ? settings.cornerRadius : 12,
-                        bottomTrailingRadius: viewModel.isExpanded ? settings.cornerRadius : 12,
-                        style: .continuous
-                    )
+            }
+            .clipShape(
+                .rect(
+                    bottomLeadingRadius: viewModel.isExpanded ? settings.cornerRadius : 12,
+                    bottomTrailingRadius: viewModel.isExpanded ? settings.cornerRadius : 12,
+                    style: .continuous
                 )
+            )
             
             if viewModel.isExpanded {
                 expandedContent
@@ -53,12 +49,9 @@ struct NotchPanelView: View {
     
     private var expandedContent: some View {
         VStack(spacing: 0) {
-            //Color.clear.frame(height: viewModel.collapsedHeight)
-            
             header
                 .padding(.horizontal, 22)
                 .padding(.top, 12)
-               
             
             if selectedTab == .nook {
                 let activeNookWidgets = registry.orderedWidgets.filter {
@@ -109,7 +102,7 @@ struct NotchPanelView: View {
                     }
                 }
                 .frame(width: innerWidth)
-                .frame(maxHeight: .infinity) //Esto evita que se aplaste al quitar la cámara
+                .frame(maxHeight: .infinity)
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
                 .padding(.bottom, 18)
@@ -133,7 +126,6 @@ struct NotchPanelView: View {
                     }
                 }
                 
-                // Apps ancladas ubicadas en el ala izquierda (no chocan con el notch)
                 PinnedAppsHeaderView()
             }
             Spacer()
